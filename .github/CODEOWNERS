@@ -1,0 +1,4 @@
+# Code owners for the TwelveLabs Claude Code Plugin
+# These users will be automatically requested for review on PRs
+
+* @twelvelabs-io/devex
