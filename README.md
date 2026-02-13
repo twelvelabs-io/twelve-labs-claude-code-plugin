@@ -15,7 +15,7 @@ Add this to your `~/.zshrc` or `~/.bashrc` to persist it.
 2. In Claude Code, run:
 
 ```
-/plugin marketplace add Teraflop-Inc/twelvelabs-claude-plugin
+/plugin marketplace add twelvelabs-io/twelve-labs-claude-code-plugin
 /plugin install twelvelabs@twelvelabs-plugins
 ```
 

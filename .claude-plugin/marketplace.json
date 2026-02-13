@@ -14,7 +14,7 @@
         "name": "TwelveLabs"
       },
       "homepage": "https://www.twelvelabs.io/",
-      "repository": "https://github.com/Teraflop-Inc/twelvelabs-claude-plugin",
+      "repository": "https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin",
       "license": "MIT",
       "keywords": ["video", "ai", "search", "analysis", "multimodal", "twelvelabs"],
       "category": "ai"
