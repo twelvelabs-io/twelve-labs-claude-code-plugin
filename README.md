@@ -31,6 +31,10 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 | `/twelvelabs:status [task-id]` | Check indexing task status |
 | `/twelvelabs:list [indexes]` | List indexed videos or available indexes |
 | `/twelvelabs:search <query>` | Search videos with natural language |
+| `/twelvelabs:image-search <image-url> [text]` | Search with a reference image + optional text (Marengo 3.0) |
+| `/twelvelabs:entity-search <command>` | Find specific people/objects using entity recognition (Marengo 3.0) |
+| `/twelvelabs:embed <path-or-url>` | Create video embeddings from a file or URL |
+| `/twelvelabs:embed-status [task-id]` | Check embedding task status and retrieve results |
 | `/twelvelabs:analyze [video-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
 | `/twelvelabs:help` | Show help and available commands |
 
@@ -40,6 +44,11 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 /twelvelabs:index /path/to/video.mp4
 /twelvelabs:index https://example.com/video.mp4
 /twelvelabs:search "person giving a presentation"
+/twelvelabs:image-search https://example.com/car.jpg red color
+/twelvelabs:entity-search setup
+/twelvelabs:entity-search <@abc123> is giving a presentation
+/twelvelabs:embed /path/to/video.mp4
+/twelvelabs:embed-status
 /twelvelabs:analyze abc123 "What are the main topics?"
 ```
 
@@ -49,6 +58,11 @@ Or just use natural language:
 - "Is my video ready?"
 - "What videos do I have?"
 - "Find the part where someone is cooking"
+- "Find scenes matching this image: https://example.com/photo.jpg"
+- "Set up entity search for Sarah using this photo"
+- "Create embeddings for this video: /path/to/video.mp4"
+- "Are my embeddings ready?"
+- "Get embeddings for video abc123"
 - "Summarize the key points of this video"
 
 ## Troubleshooting

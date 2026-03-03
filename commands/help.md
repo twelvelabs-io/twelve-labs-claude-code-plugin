@@ -49,6 +49,15 @@ Or analyze for insights:
 | `/twelvelabs:status` | Check the status of video indexing tasks |
 | `/twelvelabs:list` | List your indexed videos and indexes |
 | `/twelvelabs:search` | Search videos using natural language queries |
+| `/twelvelabs:image-search` | Search videos using a reference image + optional text |
+| `/twelvelabs:entity-search` | Find specific people/objects using entity recognition |
+| `/twelvelabs:entity-collection` | Create, list, or delete entity collections |
+| `/twelvelabs:entity-asset` | Upload reference images for entity creation |
+| `/twelvelabs:entity-create` | Create an entity from reference images |
+| `/twelvelabs:entity-list` | List entities in a collection |
+| `/twelvelabs:entity-delete` | Delete an entity from a collection |
+| `/twelvelabs:embed` | Create video embeddings from a file or URL |
+| `/twelvelabs:embed-status` | Check embedding task status and retrieve results |
 | `/twelvelabs:analyze` | Analyze video content to extract insights |
 
 ### `/twelvelabs:help`
@@ -126,6 +135,83 @@ Search indexed videos using natural language descriptions. Finds matching conten
 ```
 
 **Returns:** Matching video segments with start/end timestamps, video filename, and stream URL.
+
+### `/twelvelabs:image-search`
+
+Search videos using a reference image, optionally combined with text for refined results. Requires **Marengo 3.0**.
+
+**Usage:**
+```
+/twelvelabs:image-search <image-url>
+/twelvelabs:image-search <image-url> <text query>
+```
+
+**Examples:**
+```
+/twelvelabs:image-search https://example.com/car.jpg
+/twelvelabs:image-search https://example.com/car.jpg red color
+/twelvelabs:image-search https://example.com/building.jpg at night
+```
+
+The text refines the image match — e.g., image of a car + "red color" finds only red versions of that car model.
+
+### `/twelvelabs:entity-search`
+
+Find specific people or objects in videos using entity recognition. Requires **Marengo 3.0**.
+
+**Usage:**
+```
+/twelvelabs:entity-search setup                             # Set up a new entity
+/twelvelabs:entity-search list                              # List entities
+/twelvelabs:entity-search <@entity_id> action description   # Search for an entity
+```
+
+**Setup workflow:**
+1. Create an entity collection (groups related entities)
+2. Upload reference images of the person
+3. Create the entity linked to those images
+4. Search using the entity ID
+
+**Example:**
+```
+/twelvelabs:entity-search setup
+/twelvelabs:entity-search <@abc123> is giving a presentation
+```
+
+### `/twelvelabs:embed`
+
+Create video embeddings from a local file or URL.
+
+**Usage:**
+```
+/twelvelabs:embed <path-or-url>
+```
+
+**Supported formats:** MP4, MOV, AVI, MKV, WebM
+
+**Examples:**
+```
+/twelvelabs:embed ./video.mp4
+/twelvelabs:embed /absolute/path/to/video.mp4
+/twelvelabs:embed https://example.com/video.mp4
+```
+
+**Note:** Embedding creation is asynchronous. Use `/twelvelabs:embed-status` to check progress.
+
+### `/twelvelabs:embed-status`
+
+Check the status of video embedding tasks. Automatically retrieves embeddings when tasks are ready.
+
+**Usage:**
+```
+/twelvelabs:embed-status              # Show all pending embedding tasks
+/twelvelabs:embed-status <task-id>    # Show specific task status
+```
+
+**Status values:**
+- `Processing` - Video is being processed into embeddings
+- `Ready` - Embeddings created and ready for retrieval
+- `Failed` - Embedding creation failed
 
 ### `/twelvelabs:analyze`
 

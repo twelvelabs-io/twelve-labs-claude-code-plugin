@@ -34,6 +34,26 @@
         ]
       },
       {
+        "matcher": "mcp__twelvelabs-mcp__start-video-embeddings-task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/post-embed-video.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__twelvelabs-mcp__get-video-embeddings-tasks",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/post-embed-status.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "mcp__twelvelabs-mcp__analyse-video",
         "hooks": [
           {

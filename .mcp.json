@@ -2,7 +2,7 @@
   "mcpServers": {
     "twelvelabs-mcp": {
       "command": "npx",
-      "args": ["-p", "twelvelabs-mcp", "twelvelabs-mcp-stdio"],
+      "args": ["-y", "twelvelabs-mcp"],
       "env": {
         "TWELVELABS_API_KEY": "${TWELVELABS_API_KEY}"
       }

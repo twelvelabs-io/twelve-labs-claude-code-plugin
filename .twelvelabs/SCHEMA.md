@@ -25,6 +25,14 @@ The `.twelvelabs/config.json` file stores local state for the TwelveLabs plugin.
       "started_at": "<ISO timestamp>"
     }
   },
+  "pending_embedding_tasks": {
+    "<task_id>": {
+      "task_id": "<string>",
+      "source": "<string>",
+      "status": "<processing | ready | failed>",
+      "started_at": "<ISO timestamp>"
+    }
+  },
   "analysis_cache": {
     "<video_id>": {
       "<analysis_type>": {
@@ -46,6 +54,9 @@ Map of indexed videos keyed by video_id. Contains metadata about successfully in
 
 ### pending_tasks
 Map of indexing tasks in progress keyed by task_id. Tasks are moved to `videos` when complete.
+
+### pending_embedding_tasks
+Map of embedding tasks in progress keyed by task_id. Tasks are removed when complete or failed.
 
 ### analysis_cache
 Cache of analysis results to avoid redundant API calls. Keyed by video_id then analysis_type.

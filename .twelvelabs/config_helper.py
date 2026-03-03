@@ -22,6 +22,14 @@ Config Schema:
       "started_at": string             # ISO timestamp
     }
   },
+  "pending_embedding_tasks": {         # Embedding tasks in progress, keyed by task_id
+    "<task_id>": {
+      "task_id": string,
+      "source": string,                # File path or URL
+      "status": string,                # "processing", "ready", "failed"
+      "started_at": string             # ISO timestamp
+    }
+  },
   "analysis_cache": {                  # Cached analysis results
     "<video_id>": {
       "<analysis_type>": {
@@ -49,6 +57,7 @@ DEFAULT_CONFIG = {
     "default_index_id": None,
     "videos": {},
     "pending_tasks": {},
+    "pending_embedding_tasks": {},
     "analysis_cache": {}
 }
 
@@ -192,6 +201,57 @@ def get_all_pending_tasks() -> dict:
     """Get all pending tasks."""
     config = read_config()
     return config["pending_tasks"]
+
+
+def add_pending_embedding_task(task_id: str, source: str, status: str = "processing") -> bool:
+    """Add an embedding task to pending_embedding_tasks."""
+    config = read_config()
+    config["pending_embedding_tasks"][task_id] = {
+        "task_id": task_id,
+        "source": source,
+        "status": status,
+        "started_at": datetime.utcnow().isoformat() + "Z"
+    }
+    return write_config(config)
+
+
+def update_pending_embedding_task_status(task_id: str, status: str) -> bool:
+    """Update the status of a pending embedding task."""
+    config = read_config()
+    if task_id in config["pending_embedding_tasks"]:
+        config["pending_embedding_tasks"][task_id]["status"] = status
+        return write_config(config)
+    return False
+
+
+def complete_embedding_task(task_id: str) -> bool:
+    """Mark an embedding task as complete and remove from pending."""
+    config = read_config()
+    if task_id in config["pending_embedding_tasks"]:
+        del config["pending_embedding_tasks"][task_id]
+        return write_config(config)
+    return False
+
+
+def fail_embedding_task(task_id: str) -> bool:
+    """Mark a pending embedding task as failed and remove from pending."""
+    config = read_config()
+    if task_id in config["pending_embedding_tasks"]:
+        del config["pending_embedding_tasks"][task_id]
+        return write_config(config)
+    return False
+
+
+def get_pending_embedding_task(task_id: str) -> Optional[dict]:
+    """Get a pending embedding task by task_id."""
+    config = read_config()
+    return config["pending_embedding_tasks"].get(task_id)
+
+
+def get_all_pending_embedding_tasks() -> dict:
+    """Get all pending embedding tasks."""
+    config = read_config()
+    return config["pending_embedding_tasks"]
 
 
 def cache_analysis(video_id: str, analysis_type: str, result: Any) -> bool:
