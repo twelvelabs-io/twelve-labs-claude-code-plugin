@@ -27,28 +27,28 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 
 | Command | Description |
 |---------|-------------|
-| `/twelvelabs:index <path-or-url>` | Index a video (local file, URL, or Google Drive link) |
-| `/twelvelabs:status [task-id]` | Check indexing task status |
-| `/twelvelabs:list [indexes]` | List indexed videos or available indexes |
-| `/twelvelabs:search <query>` | Search videos with natural language |
-| `/twelvelabs:image-search <image-url> [text]` | Search with a reference image + optional text (Marengo 3.0) |
-| `/twelvelabs:entity-search <command>` | Find specific people/objects using entity recognition (Marengo 3.0) |
-| `/twelvelabs:embed <path-or-url>` | Create video embeddings from a file or URL |
-| `/twelvelabs:embed-status [task-id]` | Check embedding task status and retrieve results |
-| `/twelvelabs:analyze [video-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
+| `/twelvelabs:index-video <path-or-url>` | Index a video (local file, URL, or Google Drive link) |
+| `/twelvelabs:index-video status [task-id]` | Check indexing task status |
+| `/twelvelabs:indexes` | List, create, or delete indexes |
+| `/twelvelabs:videos` | List your indexed videos |
+| `/twelvelabs:search <query>` | Search videos by text, image, or entity |
+| `/twelvelabs:analyze [video-id] [index-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
+| `/twelvelabs:embed <path-or-url>` | Create video embeddings or check embedding status |
+| `/twelvelabs:entities` | Manage entity collections and entities |
 | `/twelvelabs:help` | Show help and available commands |
 
 ### Examples
 
 ```
-/twelvelabs:index /path/to/video.mp4
-/twelvelabs:index https://example.com/video.mp4
+/twelvelabs:index-video /path/to/video.mp4
+/twelvelabs:index-video https://example.com/video.mp4
+/twelvelabs:index-video status
 /twelvelabs:search "person giving a presentation"
-/twelvelabs:image-search https://example.com/car.jpg red color
-/twelvelabs:entity-search setup
-/twelvelabs:entity-search <@abc123> is giving a presentation
+/twelvelabs:search https://example.com/car.jpg red color
+/twelvelabs:entities create-collection "My Team"
+/twelvelabs:search <@abc123> is giving a presentation
 /twelvelabs:embed /path/to/video.mp4
-/twelvelabs:embed-status
+/twelvelabs:embed status
 /twelvelabs:analyze abc123 "What are the main topics?"
 ```
 
@@ -73,7 +73,7 @@ TwelveLabs requires videos to be at least **4 seconds** long.
 
 ### Indexing stuck in "Pending" or "Queued"
 
-Video indexing can take several minutes depending on video length. Use `/twelvelabs:status` to monitor progress.
+Video indexing can take several minutes depending on video length. Use `/twelvelabs:index-video status` to monitor progress.
 
 ### "Video format not supported"
 
@@ -90,7 +90,7 @@ ffmpeg -i input.video -c copy output.mp4
 
 ### Analysis fails
 
-- Verify the video ID with `/twelvelabs:list`
+- Verify the video ID with `/twelvelabs:videos`
 - Ensure the video is fully indexed
 
 ## Development

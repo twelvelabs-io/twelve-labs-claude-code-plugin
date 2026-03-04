@@ -2,7 +2,7 @@
 name: analyze
 description: Analyze video content using AI
 disable-model-invocation: true
-argument-hint: "[video-id] [prompt]"
+argument-hint: "[video-id] [index-id] [prompt]"
 ---
 
 # /twelvelabs:analyze - Analyze Video Content
@@ -12,7 +12,7 @@ Analyze indexed videos using TwelveLabs AI to understand and extract information
 ## Usage
 
 ```
-/twelvelabs:analyze [video-id] [prompt]
+/twelvelabs:analyze [video-id] [index-id] [prompt]
 ```
 
 **User provided:** `$ARGUMENTS`
@@ -20,6 +20,7 @@ Analyze indexed videos using TwelveLabs AI to understand and extract information
 ## Arguments
 
 - `video-id` (optional) - The video ID to analyze. If not provided, you will be prompted to select from available videos.
+- `index-id` (optional) - The index ID containing the video. If not provided, uses the default index when listing videos.
 - `prompt` (optional) - What you want to know about the video. If not provided, generates a comprehensive summary.
 
 ## Examples
@@ -34,10 +35,15 @@ Analyze indexed videos using TwelveLabs AI to understand and extract information
 /twelvelabs:analyze abc123def456
 ```
 
+### Analyze Video from Specific Index
+```
+/twelvelabs:analyze abc123def456 idx789
+```
+
 ### Analyze with Custom Prompt
 ```
 /twelvelabs:analyze abc123def456 "List all products mentioned"
-/twelvelabs:analyze abc123def456 "What are the main topics discussed?"
+/twelvelabs:analyze abc123def456 idx789 "What are the main topics discussed?"
 /twelvelabs:analyze abc123def456 "Extract action items from this meeting"
 ```
 
@@ -49,13 +55,14 @@ When the user invokes `/twelvelabs:analyze`, the arguments are provided in `$ARG
 
 Extract arguments from `$ARGUMENTS`:
 - First token: `video-id` (optional)
+- Second token: `index-id` (optional) — only if it does NOT start with a quote. If it starts with `"`, treat it as the prompt instead.
 - Remaining text: `prompt` (optional)
 
 ### Step 2: Get Video ID (if not provided)
 
 If no video-id was provided in `$ARGUMENTS`, help the user select a video:
 
-1. Call `mcp__twelvelabs-mcp__list-videos` to get available videos
+1. Call `mcp__twelvelabs-mcp__list-videos` to get available videos (pass `indexId` if an index-id was provided)
 2. Display the list to the user with video IDs and filenames
 3. Ask the user which video they want to analyze
 
@@ -85,7 +92,6 @@ Use the `mcp__twelvelabs-mcp__analyse-video` tool:
 Tool: mcp__twelvelabs-mcp__analyse-video
 Parameters:
   videoId: "<video-id>"
-  type: "open-ended"
   prompt: "<prompt>"
 ```
 
@@ -114,7 +120,7 @@ Video Not Found
 
 Could not find video with ID: <video-id>
 
-Use /twelvelabs:list to see available videos.
+Use /twelvelabs:videos to see available videos.
 ```
 
 **Analysis failed**:
@@ -122,7 +128,7 @@ Use /twelvelabs:list to see available videos.
 Analysis Failed
 
 The analysis could not be completed. This might happen if:
-- The video is still being indexed (check with /twelvelabs:status)
+- The video is still being indexed (check with /twelvelabs:index-video status)
 - The index doesn't support generative models
 
 Error: <error message if available>
@@ -136,7 +142,7 @@ Error: <error message if available>
 
 ## Related Commands
 
-- `/twelvelabs:list` - List all indexed videos
-- `/twelvelabs:index` - Index a new video
+- `/twelvelabs:videos` - List all indexed videos
+- `/twelvelabs:index-video` - Index a new video
 - `/twelvelabs:search` - Search videos for specific content
-- `/twelvelabs:status` - Check if videos are ready for analysis
+- `/twelvelabs:index-video status` - Check if videos are ready for analysis

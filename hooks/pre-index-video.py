@@ -198,7 +198,7 @@ def main():
                 if is_pending:
                     messages.append(
                         f"Warning: Video '{os.path.basename(video_file_path)}' has a pending indexing task "
-                        f"(task_id: {task_id}). Use /twelvelabs:status to check progress."
+                        f"(task_id: {task_id}). Use /twelvelabs:index-video status to check progress."
                     )
 
         elif video_url:
@@ -228,7 +228,7 @@ def main():
                 if is_pending:
                     messages.append(
                         f"Warning: This URL has a pending indexing task (task_id: {task_id}). "
-                        f"Use /twelvelabs:status to check progress."
+                        f"Use /twelvelabs:index-video status to check progress."
                     )
 
         else:
