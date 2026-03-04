@@ -19,6 +19,8 @@ Add this to your `~/.zshrc` or `~/.bashrc` to persist it.
 /plugin install twelvelabs@twelvelabs-plugins
 ```
 
+You may need to restart Claude Code after installing for the plugin and MCP to take effect.
+
 The plugin configures the MCP server, slash commands, skills, and hooks automatically.
 
 ## Usage
@@ -32,7 +34,7 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 | `/twelvelabs:indexes` | List, create, or delete indexes |
 | `/twelvelabs:videos` | List your indexed videos |
 | `/twelvelabs:search <query>` | Search videos by text, image, or entity |
-| `/twelvelabs:analyze [video-id] [index-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
+| `/twelvelabs:analyze [video-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
 | `/twelvelabs:embed <path-or-url>` | Create video embeddings or check embedding status |
 | `/twelvelabs:entities` | Manage entity collections and entities |
 | `/twelvelabs:help` | Show help and available commands |
@@ -95,10 +97,17 @@ ffmpeg -i input.video -c copy output.mp4
 
 ## Development
 
-Load the plugin from a local directory (session-only, not persisted):
+### Load from a local directory (session-only)
 
 ```bash
-claude --plugin-dir ./twelve-labs-claude-code-plugin
+claude --plugin-dir path/to/twelve-labs-claude-code-plugin
+```
+
+### Point the marketplace to a local directory
+
+```
+/plugin marketplace add path/to/twelve-labs-claude-code-plugin
+/plugin install twelvelabs@twelvelabs-plugins
 ```
 
 ## Links
