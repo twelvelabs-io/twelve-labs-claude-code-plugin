@@ -12,10 +12,15 @@ export TWELVELABS_API_KEY=your_api_key_here
 
 Add this to your `~/.zshrc` or `~/.bashrc` to persist it.
 
-2. In Claude Code, run:
+2. In Claude Code, add the plugin marketplace:
 
 ```
 /plugin marketplace add twelvelabs-io/twelve-labs-claude-code-plugin
+```
+
+3. Then install the plugin:
+
+```
 /plugin install twelvelabs@twelvelabs-plugins
 ```
 
