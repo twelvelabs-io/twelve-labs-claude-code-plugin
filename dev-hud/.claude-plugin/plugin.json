@@ -1,7 +1,7 @@
 {
   "name": "dev-hud",
-  "description": "Always-visible Claude Code HUD showing the Linear ticket, PR, worktree, and dirty/ahead branch state with clickable links into Linear and Cursor.",
-  "version": "0.1.0",
+  "description": "Always-visible Claude Code HUD showing the Linear ticket, PR, worktree, and dirty/ahead branch state with clickable links into Linear and Cursor. Ships helpers (set-focus, clear-focus, set-title, update-review-url, invalidate-pr) for wiring into ticket-bootstrap, implement, ship, and switch-workspace skills.",
+  "version": "0.2.0",
   "author": {
     "name": "TwelveLabs"
   },
