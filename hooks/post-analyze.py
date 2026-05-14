@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Post-hook for analyse-video MCP tool.
+"""Post-hook for sync-analyse-video MCP tool.
 
 This hook runs after the MCP tool completes and caches the analysis result
 to avoid redundant API calls for the same video and analysis type.
 
 Hook type: PostToolUse
-Matcher: mcp__twelvelabs-mcp__analyse-video
+Matcher: mcp__twelvelabs-mcp__sync-analyse-video
 """
 
 import json
@@ -31,8 +31,9 @@ def extract_analysis_info(tool_input: dict, tool_result: dict) -> tuple[str | No
         Tuple of (video_id, analysis_type, result) or (None, None, None) if extraction fails
     """
     # Extract video_id and type from input
+    # The new sync-analyse-video tool no longer has a 'type' field; fall back to 'prompt' as key
     video_id = tool_input.get("videoId")
-    analysis_type = tool_input.get("type")
+    analysis_type = tool_input.get("type") or "sync"
 
     # The result is the analysis output from the MCP tool
     result = None
@@ -61,7 +62,7 @@ def main():
 
     Reads hook context from stdin as JSON:
     {
-        "tool_name": "mcp__twelvelabs-mcp__analyse-video",
+        "tool_name": "mcp__twelvelabs-mcp__sync-analyse-video",
         "tool_input": {...},
         "tool_result": {...}
     }

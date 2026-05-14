@@ -1,20 +1,21 @@
 ---
 name: entities
-description: Manage entity collections, assets, and entities for video search
+description: Manage entity collections and entities for video search
 disable-model-invocation: true
 argument-hint: <subcommand>
 ---
 
 # /twelvelabs:entities - Manage Entities
 
-Manage entity collections, upload reference images, and create/delete entities for entity-based video search. Requires Marengo 3.0.
+Manage entity collections and entities for entity-based video search. Requires Marengo 3.0.
+
+For uploading the reference images themselves, use `/twelvelabs:assets upload <path-or-url>`.
 
 ## Usage
 
 ```
 /twelvelabs:entities create-collection <name>
 /twelvelabs:entities list-collections
-/twelvelabs:entities upload <path-or-url>
 /twelvelabs:entities create-entity <collection-id> <name> <asset-ids...>
 /twelvelabs:entities list-entities <collection-id>
 /twelvelabs:entities delete-entity <collection-id> <entity-id>
@@ -29,8 +30,7 @@ Manage entity collections, upload reference images, and create/delete entities f
 |------------|-------------|
 | `create-collection` | Create a new entity collection |
 | `list-collections` | List all entity collections |
-| `upload` | Upload a reference image as an asset |
-| `create-entity` | Create a named entity from reference images |
+| `create-entity` | Create a named entity from reference image assets |
 | `list-entities` | List entities in a collection |
 | `delete-entity` | Delete an entity from a collection |
 | `delete-collection` | Delete an entire collection |
@@ -43,10 +43,11 @@ Manage entity collections, upload reference images, and create/delete entities f
 ```
 
 ### Upload Reference Images
+
+Reference images for entities are uploaded via the dedicated `/twelvelabs:assets` command:
 ```
-/twelvelabs:entities upload ./sarah-headshot.jpg
-/twelvelabs:entities upload /Users/me/photos/john.png
-/twelvelabs:entities upload https://example.com/photo.jpg
+/twelvelabs:assets upload ./sarah-headshot.jpg
+/twelvelabs:assets upload https://example.com/photo.jpg
 ```
 
 ### List Collections
@@ -86,11 +87,12 @@ Usage: /twelvelabs:entities <subcommand>
 Subcommands:
   create-collection <name>               Create a new entity collection
   list-collections                       List all collections
-  upload <path-or-url>                   Upload a reference image
-  create-entity <collection-id> <name> <ids>  Create an entity
+  create-entity <collection-id> <name> <ids>  Create an entity from reference image assets
   list-entities <collection-id>          List entities in a collection
   delete-entity <collection-id> <entity-id>  Delete an entity
   delete-collection <collection-id>      Delete an entire collection
+
+To upload reference images for an entity, use /twelvelabs:assets upload <path-or-url>.
 
 Quick start: /twelvelabs:entities create-collection "My Collection"
 ```
@@ -121,61 +123,9 @@ Collection ID: <id>
 Name: <name>
 
 Next steps:
-  1. /twelvelabs:entities upload <image-path-or-url>     Upload reference images
+  1. /twelvelabs:assets upload <image-path-or-url>     Upload reference images
   2. /twelvelabs:entities create-entity <collection-id> "Name" <asset-id>   Create an entity
 ```
-
----
-
-### Subcommand: `upload`
-
-Extract the path or URL from the remaining arguments.
-
-If no path/URL provided:
-```
-Please provide an image path or URL.
-Usage: /twelvelabs:entities upload <path-or-url>
-```
-
-Determine input type:
-- **URL**: Starts with `http://` or `https://`
-- **Local file**: Everything else
-
-#### Supported Image Formats
-- `.jpg` / `.jpeg`
-- `.png`
-- `.webp`
-
-#### For URLs:
-```
-Tool: mcp__twelvelabs-mcp__create-asset
-Parameters:
-  imageUrl: "<url>"
-```
-
-#### For local files:
-1. Resolve to absolute path if relative
-2. Verify the file exists
-
-```
-Tool: mcp__twelvelabs-mcp__create-asset
-Parameters:
-  imageFile: "<absolute-path>"
-```
-
-#### Report Result
-
-On success:
-```
-Reference image uploaded.
-
-Asset ID: <id>
-
-Use this asset ID when creating an entity:
-  /twelvelabs:entities create-entity <collection-id> <name> <asset-id>
-```
-
-**Tips**: Use 3-5 reference images from different angles for best accuracy. Images should clearly show the person's face.
 
 ---
 
@@ -225,7 +175,7 @@ If no entities found:
 No entities found in this collection.
 
 Create one:
-  1. /twelvelabs:entities upload <image-path-or-url>
+  1. /twelvelabs:assets upload <image-path-or-url>
   2. /twelvelabs:entities create-entity <collection-id> "Name" <asset-id>
 ```
 
@@ -247,8 +197,8 @@ Example:
 
 Steps to get here:
   1. /twelvelabs:entities list-collections          (find your collection ID)
-  2. /twelvelabs:entities upload ./photo1.jpg      (get asset IDs)
-  3. /twelvelabs:entities upload ./photo2.jpg
+  2. /twelvelabs:assets upload ./photo1.jpg        (get asset IDs)
+  3. /twelvelabs:assets upload ./photo2.jpg
   4. /twelvelabs:entities create-entity <collection-id> "Name" <asset-id-1> <asset-id-2>
 ```
 
@@ -322,6 +272,7 @@ On success: "Collection `<id>` deleted."
 
 ## Related Commands
 
+- `/twelvelabs:assets` - Upload reference images / delete assets (used to create entities)
 - `/twelvelabs:search` - Search for entities in videos using `<@entity_id>`
 - `/twelvelabs:index-video` - Index videos for entity search
 - `/twelvelabs:help` - Show all available commands

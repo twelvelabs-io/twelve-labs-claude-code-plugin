@@ -12,16 +12,20 @@ Create video embeddings from local video files or remote URLs, or check the stat
 ## Usage
 
 ```
-/twelvelabs:embed <path-or-url>
-/twelvelabs:embed status [task-id]
+/twelvelabs:embed <path-or-url>                      # Start a new embedding task
+/twelvelabs:embed status [task-id]                   # Check status of a recent embedding task
+/twelvelabs:embed get <task-id>                      # Retrieve embeddings from a ready task
+/twelvelabs:embed get <index-id> <video-id>          # Retrieve embeddings of an already-indexed video
 ```
 
 **User provided:** `$ARGUMENTS`
 
 ## Arguments
 
-- `path-or-url` - A local file path or remote URL to a video file
+- `path-or-url` - A local file path or remote URL to a video file (used to start a new embedding task).
 - `status` - Check embedding task status. Optionally provide a task ID.
+- `get <task-id>` - Retrieve embeddings for a completed embedding task.
+- `get <index-id> <video-id>` - Retrieve embeddings of a previously-indexed video (no new task required — uses the embeddings produced during indexing).
 
 ## Supported Video Formats
 
@@ -56,9 +60,11 @@ If `$ARGUMENTS` is empty:
 - Display: "Please provide a video path/URL or use `status` to check tasks."
 - Stop processing.
 
-Check if `$ARGUMENTS` starts with `status` (case-insensitive):
-- If yes: this is a **status check**. Remove `status` from the front and use any remaining value as an optional task ID. Go to **Status Flow**.
-- If no: this is an **embed** request. Go to **Embed Flow**.
+Check the first token of `$ARGUMENTS` (case-insensitive):
+
+- `status` → **Status Flow** (any remaining token is an optional task ID).
+- `get` → **Retrieve Flow** (see below). One trailing token = task ID; two trailing tokens = indexId then videoId.
+- anything else → **Embed Flow** (start a new task).
 
 ---
 
@@ -247,11 +253,58 @@ No embedding tasks found.
 To create video embeddings, use: /twelvelabs:embed <path-or-url>
 ```
 
+---
+
+## Retrieve Flow
+
+The MCP `retrieve-video-embeddings` tool supports two retrieval modes — pick based on the arguments:
+
+### Mode 1: retrieve by task ID (freshly-embedded video)
+
+When `$ARGUMENTS` after `get` is a single token, treat it as a task ID:
+
+```
+Tool: mcp__twelvelabs-mcp__retrieve-video-embeddings
+Parameters:
+  taskId: "<task-id>"
+```
+
+If the task isn't ready yet, surface the message and tell the user to retry.
+
+### Mode 2: retrieve by indexId + videoId (already-indexed video)
+
+When `$ARGUMENTS` after `get` is two tokens, treat them as indexId and videoId:
+
+```
+Tool: mcp__twelvelabs-mcp__retrieve-video-embeddings
+Parameters:
+  indexId: "<index-id>"
+  videoId: "<video-id>"
+```
+
+This works for any video that was indexed via `/twelvelabs:index-video` — no separate embedding task needed. The embeddings are produced during indexing.
+
+If only `videoId` is provided (no `indexId`), the MCP falls back to the user's default index.
+
+#### Display the embeddings
+
+```
+Embeddings for <task-id or video-id>
+
+- Segment count: <count>
+- Each segment: { embedding: [...], startSec, endSec, embeddingScope, embeddingOption }
+```
+
+Don't dump the full float arrays inline; show counts and a structural summary unless the user explicitly asks for the raw vectors.
+
+---
+
 ## Important Notes
 
 - **Async Processing**: Embedding creation is asynchronous - it runs in the background
 - **Auto-Retrieve**: When checking status and a task is ready, embeddings are automatically retrieved
 - **Processing Time**: Embedding creation can take several minutes depending on video length
+- **Indexed videos**: If a video is already indexed in a TwelveLabs index, you can retrieve its embeddings directly without starting a new task (see Retrieve Flow Mode 2)
 
 ## Related Commands
 

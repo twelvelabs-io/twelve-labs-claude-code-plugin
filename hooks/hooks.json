@@ -54,7 +54,7 @@
         ]
       },
       {
-        "matcher": "mcp__twelvelabs-mcp__analyse-video",
+        "matcher": "mcp__twelvelabs-mcp__sync-analyse-video",
         "hooks": [
           {
             "type": "command",

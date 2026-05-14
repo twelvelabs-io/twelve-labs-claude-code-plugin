@@ -165,30 +165,35 @@ Parameters:
 
 ### Step 5: Display Search Results
 
-Format the search results clearly for the user. The search returns matching segments with timestamps.
+Format the search results clearly. The MCP `search` tool returns one entry per matching video with these fields:
+
+- `videoId`, `filename` (if available)
+- `userMetadata` — key/value pairs that were attached at index time (only present if any were set)
+- `segments` — list of matching segments, each with `start`, `end`, `rank`, and an optional `thumbnail` (a pre-signed S3 URL, valid for ~1 hour)
 
 **For each video with matching segments, display**:
 - Filename of the video (if available)
-- URL of the video stream (if available)
-- Bulleted list of start and end times for matching segments
+- `userMetadata` key/value pairs (if present)
+- A table of segments with rank, timecode, and a clickable hyperlink to the thumbnail — use the text hyperlink form `[View thumbnail](url)`, NOT markdown image syntax (`![...](url)`)
 
 **Example output with results**:
 ```
 Search Results for: "a person walking"
 
 **video_filename.mp4**
-Stream: https://stream.url/video.m3u8
+Metadata: project=demo, source=/local/path
 
-Matching segments:
-- 00:12 - 00:28 (16 seconds)
-- 01:45 - 02:03 (18 seconds)
-- 03:30 - 03:45 (15 seconds)
+| Rank | Time          | Thumbnail |
+|------|---------------|-----------|
+| 1    | 00:12 - 00:28 | [View thumbnail](https://...) |
+| 2    | 01:45 - 02:03 | [View thumbnail](https://...) |
+| 3    | 03:30 - 03:45 | [View thumbnail](https://...) |
 
 **another_video.mp4**
-Stream: https://stream.url/another.m3u8
 
-Matching segments:
-- 00:05 - 00:15 (10 seconds)
+| Rank | Time          | Thumbnail |
+|------|---------------|-----------|
+| 1    | 00:05 - 00:15 | [View thumbnail](https://...) |
 
 Found 4 matching segments across 2 videos.
 ```
@@ -236,5 +241,5 @@ Calculate segment duration as `end_time - start_time` and display in parentheses
 - `/twelvelabs:videos` - List all indexed videos
 - `/twelvelabs:index-video` - Index a new video
 - `/twelvelabs:index-video status` - Check if videos are ready for search
-- `/twelvelabs:analyze` - Get detailed analysis of specific video content
+- `/twelvelabs:sync-analyze` - Get detailed analysis of specific video content
 - `/twelvelabs:entities` - Manage entities for entity search

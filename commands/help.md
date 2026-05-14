@@ -35,7 +35,7 @@ Once indexed, search your videos:
 
 Or analyze for insights:
 ```
-/twelvelabs:analyze <video-id>
+/twelvelabs:sync-analyze <video-id>
 ```
 
 ---
@@ -50,8 +50,10 @@ Or analyze for insights:
 | `/twelvelabs:videos` | List your indexed videos |
 | `/twelvelabs:embed` | Create video embeddings or check embedding status |
 | `/twelvelabs:search` | Search videos by text, image, or entity |
-| `/twelvelabs:analyze` | Analyze video content for insights |
-| `/twelvelabs:entities` | Manage entity collections and entities |
+| `/twelvelabs:sync-analyze` | Synchronously analyze an indexed video (≤ 1 hour) |
+| `/twelvelabs:async-analyze` | Asynchronously analyze a video from a URL, local file, or asset |
+| `/twelvelabs:assets` | Upload or delete reusable media assets (images / videos) |
+| `/twelvelabs:entities` | Manage entity collections and entities (Marengo 3.0 person/object search) |
 | `/twelvelabs:help` | Show this help documentation |
 
 ---
@@ -164,42 +166,81 @@ Search indexed videos using text, images, entities, or combinations.
 **Returns:** Matching video segments with timestamps, filenames, and stream URLs.
 **Note:** Image and entity search require Marengo 3.0.
 
-### `/twelvelabs:analyze`
+### `/twelvelabs:sync-analyze`
 
-Analyze video content to extract insights.
+Synchronously analyze an already-indexed video (Pegasus 1.2, ≤ 1 hour). Returns result inline.
 
 **Usage:**
 ```
-/twelvelabs:analyze [video-id] [index-id] [prompt]
+/twelvelabs:sync-analyze [video-id] [index-id] [prompt]
 ```
 
 **Examples:**
 ```
-/twelvelabs:analyze                                    # Analyze with video selection
-/twelvelabs:analyze abc123                             # Analyze specific video
-/twelvelabs:analyze abc123 idx789                      # Video from specific index
-/twelvelabs:analyze abc123 "List all products mentioned"
-/twelvelabs:analyze abc123 "What are the main topics?"
+/twelvelabs:sync-analyze                                    # Analyze with video selection
+/twelvelabs:sync-analyze abc123                             # Analyze specific video
+/twelvelabs:sync-analyze abc123 idx789                      # Video from specific index
+/twelvelabs:sync-analyze abc123 "List all products mentioned"
+/twelvelabs:sync-analyze abc123 "What are the main topics?"
+```
+
+### `/twelvelabs:async-analyze`
+
+Asynchronously analyze a video from a direct URL or uploaded asset — no prior indexing required. Uses Pegasus 1.5 and handles videos up to 2 hours. Fire-and-forget: returns a task ID immediately.
+
+**Usage:**
+```
+/twelvelabs:async-analyze <url> [prompt]
+/twelvelabs:async-analyze status [task-id]
+/twelvelabs:async-analyze list
+/twelvelabs:async-analyze delete <task-id>
+```
+
+**Examples:**
+```
+/twelvelabs:async-analyze https://example.com/video.mp4
+/twelvelabs:async-analyze https://example.com/video.mp4 "Summarize key topics"
+/twelvelabs:async-analyze status
+/twelvelabs:async-analyze status abc123
+/twelvelabs:async-analyze list
+```
+
+**Note:** URL must be a direct http(s) link — YouTube/Drive/Dropbox share links are not accepted.
+
+### `/twelvelabs:assets`
+
+Upload images or videos as reusable assets, or delete an asset by ID. Assets are referenced by other commands: image assets become reference images for entities, video assets become inputs to `/twelvelabs:async-analyze`.
+
+**Usage:**
+```
+/twelvelabs:assets upload <path-or-url>     # Upload a local file or URL as an asset
+/twelvelabs:assets delete <asset-id>        # Delete an asset
+```
+
+**Examples:**
+```
+/twelvelabs:assets upload ./sarah-headshot.jpg
+/twelvelabs:assets upload https://example.com/keynote.mp4
+/twelvelabs:assets delete asset_abc123
 ```
 
 ### `/twelvelabs:entities`
 
-Manage entity collections, upload reference images, and create entities for entity-based video search.
+Manage entity collections and entities for entity-based person/object search (Marengo 3.0). For uploading the reference images, use `/twelvelabs:assets upload`.
 
 **Usage:**
 ```
 /twelvelabs:entities create-collection <name>               # Create a collection
-/twelvelabs:entities upload <path-or-url>                   # Upload reference image
 /twelvelabs:entities list-collections                       # List all collections
 /twelvelabs:entities list-entities <collection-id>          # List entities in a collection
-/twelvelabs:entities create-entity <collection-id> <name> <ids>  # Create entity
+/twelvelabs:entities create-entity <collection-id> <name> <ids>  # Create entity from asset IDs
 /twelvelabs:entities delete-entity <collection-id> <entity-id>    # Delete an entity
 /twelvelabs:entities delete-collection <collection-id>           # Delete a collection
 ```
 
 **Typical workflow:**
 1. `/twelvelabs:entities create-collection "My Team"` — create a collection
-2. `/twelvelabs:entities upload ./photo.jpg` — upload reference images (returns asset IDs)
+2. `/twelvelabs:assets upload ./photo.jpg` — upload reference images (returns asset IDs)
 3. `/twelvelabs:entities create-entity <collection-id> "Name" <asset-id>` — create the entity
 4. `/twelvelabs:search <@entity_id>` — search for the entity in videos
 
