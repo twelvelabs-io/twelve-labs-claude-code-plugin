@@ -34,7 +34,10 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 
 **Search across your videos** using natural language descriptions of what you're looking for — visual elements, actions, sounds, or on-screen text. You can also search using a reference image to find visually similar content, combine an image with text for refined results, or search for specific people and objects using entity recognition.
 
-**Analyze video content** to generate summaries, extract key topics, answer questions, list action items, or perform any open-ended analysis guided by a custom prompt.
+**Analyze video content** to generate summaries, extract key topics, answer questions, list action items, or perform any open-ended analysis guided by a custom prompt. Both analyze commands accept indexed `videoId`s, direct URLs, asset IDs, or local files (auto-uploaded as assets). Two modes:
+
+- `/twelvelabs:sync-analyze` — returns the result inline. Pegasus 1.5 by default for URL/asset/file inputs; falls back to Pegasus 1.2 only when analysing an existing indexed `videoId` or when the user explicitly requests 1.2. Cap: ≤1 hour video.
+- `/twelvelabs:async-analyze` — fire-and-forget for longer videos (up to 2 hours), Pegasus 1.5 throughout. Also supports **time-based metadata extraction** (`analysisMode: "time_based_metadata"` + `segmentDefinitions`) for per-segment structured output, multimodal prompting with reference images (`promptV2`), and structured JSON output (`jsonSchema`).
 
 **Create video embeddings** for use in downstream applications like similarity search, clustering, or recommendation systems.
 
@@ -57,16 +60,21 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 | `/twelvelabs:search <query> [index-id]` | Text search across videos |
 | `/twelvelabs:search <image> [text] [index-id]` | Image or composed (image + text) search |
 | `/twelvelabs:search <@entity_id> [action] [index-id]` | Entity search for specific people/objects |
-| `/twelvelabs:analyze [video-id] [index-id] [prompt]` | Analyze video content (summary, Q&A, etc.) |
+| `/twelvelabs:sync-analyze <video-id-or-url-or-asset-or-path> [prompt]` | Synchronous analysis. Pegasus 1.5 by default; Pegasus 1.2 forced for `videoId` |
+| `/twelvelabs:async-analyze <url-or-path-or-asset> [prompt]` | Async analysis (Pegasus 1.5, ≤2 hours; supports time-based metadata, `promptV2`, `jsonSchema`) |
+| `/twelvelabs:async-analyze status [task-id]` | Check async-analyze task status |
+| `/twelvelabs:async-analyze list` | List async-analyze tasks |
+| `/twelvelabs:async-analyze delete <task-id>` | Delete an async-analyze task |
 | `/twelvelabs:embed <path-or-url>` | Create video embeddings |
 | `/twelvelabs:embed status [task-id]` | Check embedding task status |
 | `/twelvelabs:entities create-collection <name>` | Create an entity collection |
 | `/twelvelabs:entities list-collections` | List all entity collections |
-| `/twelvelabs:entities upload <path-or-url>` | Upload a reference image as an asset |
-| `/twelvelabs:entities create-entity <collection-id> <name> <asset-ids...>` | Create an entity from reference images |
+| `/twelvelabs:entities create-entity <collection-id> <name> <asset-ids...>` | Create an entity from image asset IDs |
 | `/twelvelabs:entities list-entities <collection-id>` | List entities in a collection |
 | `/twelvelabs:entities delete-entity <collection-id> <entity-id>` | Delete an entity |
 | `/twelvelabs:entities delete-collection <collection-id>` | Delete a collection and all its entities |
+| `/twelvelabs:assets upload <path-or-url>` | Upload a local file or URL as an asset (image or video) |
+| `/twelvelabs:assets delete <asset-id>` | Delete an asset |
 | `/twelvelabs:help` | Show help and available commands |
 
 ### Natural Language
@@ -77,6 +85,8 @@ You can also skip slash commands and just describe what you want:
 
 - "Index this video: /path/to/video.mp4"
 - "Index this URL: https://example.com/video.mp4"
+- "Index every video in /path/to/my-videos/" (batch — folder indexing)
+- "Index this file and tag it with `project=demo`" (userMetadata round-trips into search results)
 - "Add this video for analysis"
 - "Process this video file"
 - "Add this Google Drive folder for analysis: https://drive.google.com/drive/folders/ABC123"
@@ -116,15 +126,24 @@ You can also skip slash commands and just describe what you want:
 - "Set up entity search for Sarah using this photo"
 - "Find this person giving a presentation"
 
-#### Analysis
+#### Analysis (sync — short videos, returns inline)
 
 - "What is this video about?"
 - "Summarize the key points of this video"
-- "What are the main topics discussed?"
+- "Analyze https://example.com/clip.mp4 and tell me what happens" (URL input — Pegasus 1.5)
+- "Analyze /path/to/clip.mp4 in one sentence" (local file — auto-uploaded, Pegasus 1.5)
 - "Extract action items from this meeting"
-- "What products are mentioned in the demo video?"
-- "Create chapters for this video"
-- "List all highlights"
+- "Return JSON with `{product, timestamp_sec}[]` for every product mentioned" (structured output via `jsonSchema`)
+
+#### Analysis (async — long videos, segmentation, structured outputs)
+
+- "Analyze this 90-minute keynote and tell me the key takeaways"
+- "Analyze this URL without indexing: https://example.com/long-video.mp4"
+- "Extract every highlight from this video with a description and importance score for each" (time-based metadata extraction)
+- "Find every shot that looks like this product image" (multimodal `promptV2` with reference images)
+- "Is my async analyze task done?"
+- "Show all my failed async tasks"
+- "Delete the analyze task for that long video"
 
 #### Embeddings
 
@@ -149,11 +168,17 @@ You can also skip slash commands and just describe what you want:
 #### Entity Management
 
 - "Create an entity collection called My Team"
-- "Upload this photo as a reference image: ./sarah.jpg"
-- "Create an entity for Sarah using these reference images"
+- "Create an entity for Sarah using these reference image asset IDs"
 - "List my entity collections"
 - "What entities are in this collection?"
 - "Delete this entity"
+
+#### Assets
+
+- "Upload this photo as an asset: ./sarah.jpg"
+- "Upload this video as an asset: ./keynote.mp4"
+- "Upload this image URL as an asset"
+- "Delete this asset"
 
 #### Sample Videos
 

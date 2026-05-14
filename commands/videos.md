@@ -55,7 +55,10 @@ Use the `mcp__twelvelabs-mcp__list-videos` tool:
 Tool: mcp__twelvelabs-mcp__list-videos
 Parameters:
   indexId: "<index-id>"
+  page: <page-number>     # optional; defaults to 1
 ```
+
+If the response indicates more pages are available, surface this to the user and only request the next page once they confirm — pass `page: <next>` on the follow-up call.
 
 ### Step 3: Display Results
 
@@ -91,7 +94,7 @@ To index a video, use: /twelvelabs:index-video <path-or-url>
 ## Important Notes
 
 - **Default Index**: When no index ID is specified, the default index is used
-- **Video IDs**: Use these IDs with `/twelvelabs:analyze` and `/twelvelabs:search`
+- **Video IDs**: Use these IDs with `/twelvelabs:sync-analyze` and `/twelvelabs:search`
 - **Pagination**: Large lists may be paginated — ask to see more if needed
 
 ## Related Commands
@@ -99,4 +102,4 @@ To index a video, use: /twelvelabs:index-video <path-or-url>
 - `/twelvelabs:index-video` - Index a new video
 - `/twelvelabs:index-video status` - Check indexing task status
 - `/twelvelabs:search` - Search indexed videos
-- `/twelvelabs:analyze` - Analyze indexed videos
+- `/twelvelabs:sync-analyze` - Analyze indexed videos

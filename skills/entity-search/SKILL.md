@@ -51,14 +51,14 @@ Upload one or more reference images for the person. Multiple images from differe
 ```
 Tool: mcp__twelvelabs-mcp__create-asset
 Parameters:
-  imageUrl: "<publicly accessible image URL>"
+  url: "<publicly accessible image URL>"
 ```
 
 **From a local file**:
 ```
 Tool: mcp__twelvelabs-mcp__create-asset
 Parameters:
-  imageFilePath: "<absolute path to image file>"
+  file: "<absolute path to image file>"
 ```
 
 Repeat for each reference image. Collect all returned asset IDs.

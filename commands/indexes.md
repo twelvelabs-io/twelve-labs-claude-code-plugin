@@ -79,6 +79,15 @@ Examples:
 
 ```
 Tool: mcp__twelvelabs-mcp__list-indexes
+Parameters: (none = page 1, 10 per page)
+```
+
+If the API response says more pages are available, surface this to the user and only fetch the next page after they confirm:
+
+```
+Tool: mcp__twelvelabs-mcp__list-indexes
+Parameters:
+  page: <next-page-number>
 ```
 
 #### Display Results
@@ -140,7 +149,12 @@ Tool: mcp__twelvelabs-mcp__create-index
 Parameters:
   name: "<index name>"
   models: ["<model1>", "<model2>"]
+  addons: ["thumbnail"]          # optional, default-on; omit to use the default
 ```
+
+The `addons` parameter currently accepts only `"thumbnail"` (returns per-segment thumbnail URLs in search results). Enabled by default if omitted. Set `addons: []` to disable thumbnails.
+
+> Note: this `create-index` tool always creates Pegasus 1.2 + Marengo 3.0 indexes. For Pegasus 1.5 features (clip windowing, structured prompts, time-based metadata), use `/twelvelabs:sync-analyze` or `/twelvelabs:async-analyze` with a `videoUrl` / `assetId` / `base64Video` input — those flows run Pegasus 1.5 directly on the source and don't need an index.
 
 On success:
 ```
@@ -159,17 +173,35 @@ On failure: Report the error message.
 
 ### Delete
 
-Extract the index ID from `$ARGUMENTS` (everything after `delete`).
+Extract the index reference from `$ARGUMENTS` (everything after `delete`).
 
-If no index ID provided:
-```
-Please provide an index ID.
-Usage: /twelvelabs:indexes delete <index-id>
+#### Step 1: Resolve the index ID
 
-List indexes with: /twelvelabs:indexes
-```
+Classify the remaining argument:
 
-Warn the user: "This will permanently delete the index and all videos in it. Continue?"
+- **24-char hex string** → that's the index ID directly. Skip to Step 2.
+- **A name in quotes or a fuzzy reference** ("the index I just created", "marketing-videos", "the one from yesterday") → resolve it:
+  1. Call `mcp__twelvelabs-mcp__list-indexes` to enumerate available indexes.
+  2. Match the user's reference against the returned `name` field (case-insensitive, allow partial substring matches).
+  3. If exactly one index matches → use its ID, proceed to Step 2.
+  4. If multiple match or no match → show the user the list and ask them to pick by name or ID. **Do not guess.**
+- **No argument at all** → list indexes and ask:
+  ```
+  Which index would you like to delete?
+
+  | # | Index ID | Name | Videos |
+  |---|----------|------|--------|
+  | 1 | <id>     | <name> | <count> |
+  | 2 | <id>     | <name> | <count> |
+
+  Reply with a name or the index ID.
+  ```
+
+#### Step 2: Confirm + delete
+
+Warn the user: "This will permanently delete the index `<name>` (`<id>`) and all videos in it. Continue?"
+
+If the user has already authorised the deletion in their original request (e.g. "delete it" after listing, or an explicit "yes, delete X"), proceed without re-asking.
 
 ```
 Tool: mcp__twelvelabs-mcp__delete-index
@@ -177,14 +209,14 @@ Parameters:
   indexId: "<index-id>"
 ```
 
-On success: "Index `<index-id>` deleted."
+On success: "Index `<name>` (`<index-id>`) deleted."
 On failure: Report the error message.
 
 ## Important Notes
 
 - **Default**: Both marengo (search) and pegasus (generation) are enabled
 - **Marengo**: Required for `/twelvelabs:search` including image and entity search
-- **Pegasus**: Required for `/twelvelabs:analyze` (summaries, chapters, etc.)
+- **Pegasus**: Required for `/twelvelabs:sync-analyze` (summaries, chapters, etc.)
 - **Deletion**: Deleting an index removes all videos in it permanently
 
 ## Related Commands

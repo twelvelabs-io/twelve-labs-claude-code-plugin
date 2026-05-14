@@ -1,18 +1,18 @@
 ---
 name: index-video
-description: Index a video file or URL, or check indexing status
+description: Index a video file, folder of videos, or URL, or check indexing status
 disable-model-invocation: true
-argument-hint: <path-or-url> [index-id] | status [task-id]
+argument-hint: <path-or-url-or-folder> [index-id] | status [task-id]
 ---
 
 # /twelvelabs:index-video - Index Videos for AI Analysis
 
-Index local video files or remote URLs for AI analysis using TwelveLabs, or check the status of indexing tasks.
+Index local video files (single or whole folder) or remote URLs for AI analysis using TwelveLabs, or check the status of indexing tasks. Optional `userMetadata` lets you attach JSON key/value pairs that round-trip into search results.
 
 ## Usage
 
 ```
-/twelvelabs:index-video <path-or-url> [index-id]
+/twelvelabs:index-video <path-or-url-or-folder> [index-id]
 /twelvelabs:index-video status [task-id]
 ```
 
@@ -20,11 +20,13 @@ Index local video files or remote URLs for AI analysis using TwelveLabs, or chec
 
 ## Arguments
 
-- `path-or-url` - **Required** (for indexing). Either:
-  - Local file path (absolute or relative) to a video file
-  - Remote URL (http:// or https://) to a video
-  - Google Drive link (file or public folder)
-- `index-id` - **Optional**. ID of the index to add the video to. If not provided, uses the default index.
+- `path-or-url-or-folder` - **Required** (for indexing). One of:
+  - Local file path to a video file
+  - **Local folder path** containing video files (every `.mp4`/`.mov`/`.avi`/`.mkv`/`.webm` in the folder is indexed)
+  - Remote http(s) URL to a video
+  - Google Drive link (single file or public folder — folder indexes all MP4s)
+- `index-id` - Optional. ID of the index to add the video(s) to. If not provided, uses the default index.
+- `userMetadata` - Optional. JSON string of key/value pairs to attach to the indexed video(s). Keys are strings; values can be string/integer/float/boolean. Example: `'{"project": "demo", "source": "/local/path"}'`. The metadata appears in search results.
 - `status` - Check indexing task status. Optionally provide a task ID.
 
 ## Supported Video Formats
@@ -77,10 +79,13 @@ Extract the path or URL from `$ARGUMENTS`.
 
 Check if there is a second argument after the path/URL — if so, treat it as an `indexId`.
 
-Determine if the input is a local file path or a URL:
+Determine the input type:
 
 - **URL**: Starts with `http://` or `https://`
-- **Local file**: Everything else (absolute or relative path)
+- **Local folder**: An existing directory on disk (not a file). Use `folderFilePath`.
+- **Local file**: Everything else (absolute or relative path to a video file). Use `videoFilePath`.
+
+If the user supplied `userMetadata` (e.g. "tag it with project=demo"), capture it as a JSON string to pass through to all three flows.
 
 ### Step 3: Validate the Input
 
@@ -111,7 +116,21 @@ Tool: mcp__twelvelabs-mcp__start-video-indexing-task
 Parameters:
   videoFilePath: "<absolute-path-to-video>"
   indexId: "<index-id>"          # only include if provided
+  userMetadata: "<JSON string>"  # only include if provided
 ```
+
+#### For Local Folders:
+The MCP tool indexes every supported video file in the folder and returns one task per file.
+
+```
+Tool: mcp__twelvelabs-mcp__start-video-indexing-task
+Parameters:
+  folderFilePath: "<absolute-path-to-folder>"
+  indexId: "<index-id>"          # only include if provided
+  userMetadata: "<JSON string>"  # only include if provided — applied to every video
+```
+
+Supported video extensions inside the folder: `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`.
 
 #### For URLs (including Google Drive):
 ```
@@ -119,6 +138,7 @@ Tool: mcp__twelvelabs-mcp__start-video-indexing-task
 Parameters:
   videoUrl: "<url>"
   indexId: "<index-id>"          # only include if provided
+  userMetadata: "<JSON string>"  # only include if provided
 ```
 
 **Google Drive Notes:**
@@ -143,13 +163,17 @@ Replace `<task_id>` with the task ID from the MCP tool response and `<source_pat
 ### Step 6: Report Result
 
 1. **On success** (single video):
+
+   The MCP tool response includes `indexId` and `indexedAssetId`. Extract these from the response text and show:
    ```
    Video indexing started for: <filename-or-url>
 
-   Task ID: <task_id>
+   Index ID: <index_id>
+   Indexed Asset ID: <indexed_asset_id>
 
    Video indexing is asynchronous and may take several minutes depending on video length.
    Use `/twelvelabs:index-video status` to check the indexing progress.
+   To check status directly: mcp__twelvelabs-mcp__get-indexed-asset with indexId and indexedAssetId above.
    ```
 
 2. **On success** (Google Drive folder):
@@ -157,8 +181,8 @@ Replace `<task_id>` with the task ID from the MCP tool response and `<source_pat
    Video indexing started for Google Drive folder
 
    Multiple indexing tasks started:
-   - Task ID: <task_id_1> - <filename_1>
-   - Task ID: <task_id_2> - <filename_2>
+   - Indexed Asset ID: <indexed_asset_id_1> - <filename_1>
+   - Indexed Asset ID: <indexed_asset_id_2> - <filename_2>
    ...
 
    Video indexing is asynchronous and may take several minutes.
@@ -211,16 +235,31 @@ This returns a dict of pending tasks keyed by task_id, or an empty dict if none.
 
 ### Step 4s: Call the MCP Tool
 
-Use the `mcp__twelvelabs-mcp__get-video-indexing-tasks` tool:
+If the user has an `indexId` and `indexedAssetId` from a recent `start-video-indexing-task` response, use the preferred tool:
 
-#### For a specific task:
+#### For a specific indexed asset (preferred for new tasks):
+```
+Tool: mcp__twelvelabs-mcp__get-indexed-asset
+Parameters:
+  indexId: "<index-id>"
+  indexedAssetId: "<indexed-asset-id>"
+  transcription: true            # only include if the user wants the transcript inline
+```
+
+Statuses for `get-indexed-asset`: `pending`, `queued`, `indexing`, `ready`, `failed`.
+
+Set `transcription: true` when the user asks for the transcript ("what does the video say?", "give me the captions") so the response includes the audio transcript alongside metadata. Defaults to false otherwise to keep responses small.
+
+Otherwise, use the legacy task tool:
+
+#### For a specific task (legacy):
 ```
 Tool: mcp__twelvelabs-mcp__get-video-indexing-tasks
 Parameters:
   taskId: "<task-id>"
 ```
 
-#### For all recent tasks (no task-id):
+#### For all recent tasks (no task-id, legacy):
 ```
 Tool: mcp__twelvelabs-mcp__get-video-indexing-tasks
 Parameters: (none - returns latest 10 tasks)
@@ -317,10 +356,10 @@ To index a video, use: /twelvelabs:index-video <path-or-url>
 - **Async Processing**: Video indexing is asynchronous - it runs in the background
 - **Status Checking**: Use `/twelvelabs:index-video status` to monitor indexing progress
 - **File Access**: The file must be accessible to the TwelveLabs MCP server
-- **Ready Videos**: Once ready, videos can be searched with `/twelvelabs:search` or analyzed with `/twelvelabs:analyze`
+- **Ready Videos**: Once ready, videos can be searched with `/twelvelabs:search` or analyzed with `/twelvelabs:sync-analyze`
 
 ## Related Commands
 
 - `/twelvelabs:videos` - List indexed videos
 - `/twelvelabs:search` - Search indexed videos
-- `/twelvelabs:analyze` - Analyze indexed videos
+- `/twelvelabs:sync-analyze` - Analyze indexed videos
