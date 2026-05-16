@@ -18,6 +18,20 @@
       "license": "MIT",
       "keywords": ["video", "ai", "search", "analysis", "multimodal", "twelvelabs"],
       "category": "ai"
+    },
+    {
+      "name": "dev-hud",
+      "source": "./dev-hud",
+      "description": "Always-visible Claude Code HUD: Linear ticket + title, PR number, worktree dir, and dirty/ahead branch state, with clickable links into Linear and Cursor.",
+      "version": "0.1.0",
+      "author": {
+        "name": "TwelveLabs"
+      },
+      "homepage": "https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/tree/main/dev-hud",
+      "repository": "https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin",
+      "license": "MIT",
+      "keywords": ["statusline", "hud", "linear", "git", "worktree", "productivity"],
+      "category": "productivity"
     }
   ]
 }
