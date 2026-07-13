@@ -2,7 +2,7 @@
 name: videos
 description: List your indexed videos
 disable-model-invocation: true
-argument-hint: [index-id]
+argument-hint: "[index-id]"
 ---
 
 # /twelvelabs:videos - List Indexed Videos
