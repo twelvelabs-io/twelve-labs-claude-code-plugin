@@ -2,7 +2,7 @@
 name: indexes
 description: List, create, or delete your TwelveLabs indexes
 disable-model-invocation: true
-argument-hint: [create | delete] [args]
+argument-hint: "[create | delete] [args]"
 ---
 
 # /twelvelabs:indexes - Manage Indexes
