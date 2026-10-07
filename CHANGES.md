@@ -16,9 +16,9 @@ Both models support `promptV2`, `startTime`/`endTime`, `jsonSchema`, and `time_b
 
 ## Indexed videos: `videoId` → `asset_id`
 
-`sync-analyse-video` now accepts `videoId` on any model. The server sends it to TwelveLabs as `video.asset_id`, and takes a new optional `indexId` to look up the asset ID for videos indexed before assets existed.
+`sync-analyse-video` now accepts `videoId` on any model. The server sends it to TwelveLabs as `video.asset_id`, after looking up the video's asset ID (which usually differs from the video ID). A new optional `indexId` makes that lookup direct; without it the server searches the user's indexes.
 
-- `commands/sync-analyze.md`, `skills/sync-analyze/SKILL.md`: when analysing an indexed `videoId`, pass the `indexId` it came from whenever it's known (search results, the index that was listed, or the default index). The "videoId is not accepted with pegasus1.5" error guidance is replaced with "retry with `indexId`".
+- `commands/sync-analyze.md`, `skills/sync-analyze/SKILL.md`: when analysing an indexed `videoId`, pass the `indexId` it came from whenever it's known (search results, the index that was listed, or the default index). The "videoId is not accepted with pegasus1.5" error guidance is removed.
 - Indexed-video analysis now has the full feature set; it is no longer described as legacy.
 
 ## Indexes are Marengo 3.0 only

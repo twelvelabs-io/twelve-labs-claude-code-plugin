@@ -102,7 +102,7 @@ Uploaded <path> as asset <assetId>. Running sync analysis…
 
 Use the parameter that matches the classified input type. Provide **exactly one** of `videoId`, `videoUrl`, `assetId`, `base64Video`.
 
-For `videoId` — include `indexId` whenever you know the index the video came from (e.g. from search results, the index you listed, or the default index). The server uses it to look up the video's asset ID, which older videos need:
+For `videoId` — include `indexId` whenever you know the index the video came from (e.g. from search results, the index you listed, or the default index). The server uses it to look up the video's asset ID directly; without it, the server searches all indexes:
 ```
 Tool: mcp__twelvelabs-mcp__sync-analyse-video
 Parameters:
@@ -169,7 +169,7 @@ Prompt: "<user's prompt>"
 
 **Cannot find video / file**: see Step 1.
 
-**`videoId` call fails and the server suggests "retry with indexId"**: the video is from an older index and its asset ID must be looked up. Retry with the `indexId` it came from. If unknown, ask the user or find it with `/twelvelabs:indexes list` / `/twelvelabs:videos`.
+**`videoId` call fails with "asset ... does not exist"**: the video wasn't found in any of the user's indexes. Check the ID with `/twelvelabs:videos`, or retry with the `indexId` it came from.
 
 **`Provide exactly one of videoId, videoUrl, assetId, or base64Video`**: too many or zero sources set in the tool call. Re-classify per Step 1.
 
@@ -179,7 +179,7 @@ Analysis Failed
 
 The analysis could not be completed. Possible causes:
 - The video is still indexing (check with /twelvelabs:index-video status)
-- A `videoId` was passed without its `indexId` (retry with `indexId`)
+- The `videoId` doesn't exist in any of the user's indexes
 - The asset is still processing — wait for status="ready"
 
 Error: <error message from API>

@@ -272,7 +272,6 @@ ffmpeg -i input.video -c copy output.mp4
 
 - Verify the video ID is correct (use `/twelvelabs:videos` to find video IDs)
 - Ensure the video is fully indexed
-- For an indexed video ID from an older index, retry with the index ID it came from so its asset can be looked up
 
 ---
 

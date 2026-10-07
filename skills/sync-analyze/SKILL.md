@@ -37,7 +37,7 @@ Only switch to `pegasus1.5` when the user explicitly asks for it ("use pegasus 1
 
 Look at what the user gave you:
 
-- 24-char hex string referred to as a "video" → `videoId`. Also pass `indexId` whenever you know which index it came from (the index you searched or listed, or the default index). The server uses it to look up the video's asset ID; older videos can fail without it.
+- 24-char hex string referred to as a "video" → `videoId`. Also pass `indexId` whenever you know which index it came from (the index you searched or listed, or the default index). The server uses it to look up the video's asset ID directly; without it, the server searches all indexes.
 - `http(s)://...` URL → `videoUrl`.
 - 24-char hex or `asset_*` referred to as an "asset" or "uploaded thing" → `assetId`.
 - Anything that looks like a file path → resolve to absolute; verify the file exists; **upload it first**:
@@ -89,7 +89,7 @@ Model: pegasus1.6    (or pegasus1.5)
 
 ### Step 6: Errors
 
-- Error on a `videoId` call made without `indexId` (the server adds "retry with indexId") → the video is from an older index. Retry with the `indexId` it came from; if you don't know it, ask the user or check `/twelvelabs:videos`.
+- "asset ... does not exist" on a `videoId` call → the video isn't in any of the user's indexes. Check the ID with `/twelvelabs:videos`, or retry with the `indexId` it came from.
 - `Provide exactly one of videoId, videoUrl, assetId, or base64Video` → you set zero or multiple sources; re-classify.
 - Asset still processing → wait a couple seconds and retry (`create-asset` returns status `pending` initially).
 
