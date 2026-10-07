@@ -1,4 +1,53 @@
+# Plugin Changes — v1.4.0 (sync with MCP server 1.1.0)
+
+This section covers the changes that bring the plugin in sync with `twelvelabs-mcp` v1.1.0. TwelveLabs removed Pegasus 1.2 on 2026-08-18; MCP 1.1.0 follows that removal.
+
+## Default-model policy (supersedes the v1.3.0 policy below)
+
+Pegasus 1.6 is the default for all analysis. Pegasus 1.5 is still selectable when the user asks for it. Pegasus 1.2 no longer exists, so every "force pegasus1.2" / "legacy 1.2" instruction is gone.
+
+| Command | Default `modelName` |
+|---|---|
+| `/sync-analyze` (any input, including `videoId`) | **`pegasus1.6`** |
+| `/async-analyze` (any input) | **`pegasus1.6`** |
+| `/indexes create` | `marengo3.0` only (no model choice) |
+
+Both models support `promptV2`, `startTime`/`endTime`, `jsonSchema`, and `time_based_metadata`. The old "Pegasus 1.5 only" caveats and the 1.2 `maxTokens` range were removed from the docs.
+
+## Indexed videos: `videoId` → `asset_id`
+
+`sync-analyse-video` now accepts `videoId` on any model. The server sends it to TwelveLabs as `video.asset_id`, and takes a new optional `indexId` to look up the asset ID for videos indexed before assets existed.
+
+- `commands/sync-analyze.md`, `skills/sync-analyze/SKILL.md`: when analysing an indexed `videoId`, pass the `indexId` it came from whenever it's known (search results, the index that was listed, or the default index). The "videoId is not accepted with pegasus1.5" error guidance is replaced with "retry with `indexId`".
+- Indexed-video analysis now has the full feature set; it is no longer described as legacy.
+
+## Indexes are Marengo 3.0 only
+
+`create-index` always creates a Marengo 3.0 (search/embedding) index. Its `models` param is deprecated: `"generative"` is accepted but ignored, and the response adds a note. `list-indexes` labels each model and includes the raw `modelName`.
+
+- `commands/indexes.md`: removed the `pegasus` model choice and the `[model]` argument; `create-index` is called without `models`. Explains that analysis doesn't need an index.
+- `commands/help.md`, `skills/list/SKILL.md`, `README.md`: same — no more `generative` / Pegasus index option; index listings show `modelName`.
+
+## Async tasks: `canceled` + `cancel-analyse-task`
+
+- `get-analyse-task` treats `ready`, `failed`, and `canceled` as final. The plugin now stops polling on `canceled` and tells the user the task produced no result.
+- `list-analyse-tasks` accepts `status: "canceled"`; the docs list it.
+- New MCP tool `cancel-analyse-task` (`taskId`). Exposed as `/twelvelabs:async-analyze cancel <task-id>`, mentioned after a task starts, while it's still running, and when delete fails because the task is still processing. Listed in `commands/help.md` and `README.md`.
+
+## Other fixes in this release
+
+- **Copilot CLI `argument-hint` fix** ([issue #4](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/issues/4) / [PR #5](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/pull/5)): `argument-hint` frontmatter values are quoted so YAML parses them as strings. GitHub Copilot CLI ≥ 1.0.65 silently dropped commands whose hint was a bare `[...]` (parsed as an array).
+- **Windows hooks fix** ([issue #6](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/issues/6)): all six hooks crashed on Windows because `.twelvelabs/config_helper.py` imported the Unix-only `fcntl` module. Hooks now run on Windows.
+
+## Version
+
+`.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` bumped to `1.4.0`.
+
+---
+
 # Plugin Changes — v1.3.0 (sync with MCP server 1.0.0)
+
+> **History.** Superseded by v1.4.0 above. Pegasus 1.2 was removed by TwelveLabs on 2026-08-18; the model policy and index notes in this section no longer apply.
 
 This document summarises every change made to bring the plugin in sync with the upstream TwelveLabs MCP server (`twelvelabs-mcp` v1.0.0, SDK `twelvelabs-js` ^1.2.4).
 

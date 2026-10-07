@@ -13,7 +13,7 @@ List your TwelveLabs indexes, create new ones, or delete existing ones.
 
 ```
 /twelvelabs:indexes
-/twelvelabs:indexes create <name> [model]
+/twelvelabs:indexes create <name>
 /twelvelabs:indexes delete <index-id>
 ```
 
@@ -22,25 +22,20 @@ List your TwelveLabs indexes, create new ones, or delete existing ones.
 ## Arguments
 
 - *(no arguments)* — List all available indexes
-- `create <name> [model]` — Create a new index with the given name and optional model
+- `create <name>` — Create a new index with the given name
 - `delete <index-id>` — Delete an index
 
-## Models
+## Model
 
-| Model | Purpose |
-|-------|---------|
-| `marengo` | Search — visual, text-in-video, conversational search, image search, entity search |
-| `pegasus` | Generation — summarization, chapters, highlights, open-ended text |
+Every index uses **Marengo 3.0**, the search and embedding model (visual, text-in-video, conversational search, image search, entity search). There is no model choice.
 
-By default, both marengo and pegasus are enabled. Specify one to create a single-model index.
+Indexes are for search and embeddings only. Video analysis (`/twelvelabs:sync-analyze`, `/twelvelabs:async-analyze`) runs on Pegasus directly and does not need an index.
 
 ## Examples
 
 ```
 /twelvelabs:indexes
 /twelvelabs:indexes create "marketing-videos"
-/twelvelabs:indexes create "search-index" marengo
-/twelvelabs:indexes create "generation-index" pegasus
 /twelvelabs:indexes delete abc123
 ```
 
@@ -58,18 +53,12 @@ Usage: /twelvelabs:indexes [command]
 
 Commands:
   (none)                   List all indexes
-  create <name> [model]    Create a new index
+  create <name>            Create a new index (Marengo 3.0 search/embedding)
   delete <index-id>        Delete an index
-
-Models:
-  marengo   - Search (visual, text, conversational, image, entity)
-  pegasus   - Generation (summaries, chapters, highlights)
-  (default) - Both marengo and pegasus
 
 Examples:
   /twelvelabs:indexes
   /twelvelabs:indexes create "marketing-videos"
-  /twelvelabs:indexes create "search-index" marengo
   /twelvelabs:indexes delete abc123
 ```
 
@@ -97,11 +86,13 @@ Available Indexes
 
 | Index ID | Name | Models |
 |----------|------|--------|
-| <id1>    | <name1> | <models1> |
-| <id2>    | <name2> | <models2> |
+| <id1>    | <name1> | <modelName1> |
+| <id2>    | <name2> | <modelName2> |
 
 Total: <count> indexes
 ```
+
+For the Models column, show each model's raw `modelName` (e.g. `marengo3.0`) from the response. The `name` label (`embedding` / `generative`) is the server's category; older indexes may still list a `generative` (Pegasus) model, which the plugin no longer uses — analysis doesn't go through the index.
 
 If no indexes found:
 ```
@@ -116,45 +107,33 @@ A default index is also created automatically when you index your first video.
 
 ### Create
 
-Extract the index name and optional model from `$ARGUMENTS` (everything after `create`).
+Extract the index name from `$ARGUMENTS` (everything after `create`).
 
 - First token (or quoted string): index name
-- Second token (optional): model name
+- If a second token names a model (`marengo`, `pegasus`, `marengo3.0`, …), ignore it. If it was `pegasus`, tell the user indexes are search-only and analysis doesn't need an index.
 
 If no name provided:
 ```
 Please provide a name for the index.
 
-Usage: /twelvelabs:indexes create <name> [model]
-
-Models:
-  marengo   - Search (visual, text, conversational, image, entity)
-  pegasus   - Generation (summaries, chapters, highlights)
-  (default) - Both marengo and pegasus
+Usage: /twelvelabs:indexes create <name>
 
 Examples:
   /twelvelabs:indexes create "marketing-videos"
-  /twelvelabs:indexes create "search-index" marengo
 ```
 
-Map the model name to the API `models` array:
-- `marengo` → `["embedding"]`
-- `pegasus` → `["generative"]`
-- nothing (default) → `["embedding", "generative"]`
-
-The user may also use versioned names like `marengo3.0` or `pegasus3.0` — treat these the same as the base name.
+Don't pass `models` — it's deprecated. The server always creates a Marengo 3.0 index.
 
 ```
 Tool: mcp__twelvelabs-mcp__create-index
 Parameters:
   name: "<index name>"
-  models: ["<model1>", "<model2>"]
   addons: ["thumbnail"]          # optional, default-on; omit to use the default
 ```
 
 The `addons` parameter currently accepts only `"thumbnail"` (returns per-segment thumbnail URLs in search results). Enabled by default if omitted. Set `addons: []` to disable thumbnails.
 
-> Note: this `create-index` tool always creates Pegasus 1.2 + Marengo 3.0 indexes. For Pegasus 1.5 features (clip windowing, structured prompts, time-based metadata), use `/twelvelabs:sync-analyze` or `/twelvelabs:async-analyze` with a `videoUrl` / `assetId` / `base64Video` input — those flows run Pegasus 1.5 directly on the source and don't need an index.
+> Note: `create-index` always creates a Marengo 3.0-only index (search and embeddings). If the response includes a note that a model was ignored, that's expected. To analyse videos, use `/twelvelabs:sync-analyze` or `/twelvelabs:async-analyze` — they run Pegasus 1.6 directly and don't need an index. An indexed video can still be analysed with `/twelvelabs:sync-analyze <videoId>`.
 
 On success:
 ```
@@ -162,7 +141,7 @@ Index created!
 
 Index ID: <id>
 Name: <name>
-Models: <models>
+Model: marengo3.0
 
 Next: /twelvelabs:index-video <path-or-url>    Index a video into this index
 ```
@@ -214,9 +193,9 @@ On failure: Report the error message.
 
 ## Important Notes
 
-- **Default**: Both marengo (search) and pegasus (generation) are enabled
-- **Marengo**: Required for `/twelvelabs:search` including image and entity search
-- **Pegasus**: Required for `/twelvelabs:sync-analyze` (summaries, chapters, etc.)
+- **Model**: Every index is Marengo 3.0 (search and embeddings). There is no model choice.
+- **Search**: `/twelvelabs:search` (including image and entity search) runs against an index
+- **Analysis doesn't need an index**: `/twelvelabs:sync-analyze` and `/twelvelabs:async-analyze` run Pegasus 1.6 on a URL, asset, file, or indexed `videoId`
 - **Deletion**: Deleting an index removes all videos in it permanently
 
 ## Related Commands

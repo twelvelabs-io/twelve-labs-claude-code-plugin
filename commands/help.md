@@ -50,8 +50,8 @@ Or analyze for insights:
 | `/twelvelabs:videos` | List your indexed videos |
 | `/twelvelabs:embed` | Create video embeddings or check embedding status |
 | `/twelvelabs:search` | Search videos by text, image, or entity |
-| `/twelvelabs:sync-analyze` | Synchronously analyze an indexed video (≤ 1 hour) |
-| `/twelvelabs:async-analyze` | Asynchronously analyze a video from a URL, local file, or asset |
+| `/twelvelabs:sync-analyze` | Synchronously analyze a video by ID, URL, asset, or local file (≤ 1 hour) |
+| `/twelvelabs:async-analyze` | Asynchronously analyze a video from a URL, local file, or asset; check, list, cancel, or delete tasks |
 | `/twelvelabs:assets` | Upload or delete reusable media assets (images / videos) |
 | `/twelvelabs:entities` | Manage entity collections and entities (Marengo 3.0 person/object search) |
 | `/twelvelabs:help` | Show this help documentation |
@@ -90,20 +90,16 @@ List, create, or delete your TwelveLabs indexes.
 **Usage:**
 ```
 /twelvelabs:indexes                              # List all indexes
-/twelvelabs:indexes create <name> [model]        # Create a new index
+/twelvelabs:indexes create <name>                # Create a new index
 /twelvelabs:indexes delete <index-id>            # Delete an index
 ```
 
-**Models:**
-- `marengo` — Search: visual, text-in-video, conversational, image, entity
-- `pegasus` — Generation: summaries, chapters, highlights
-- *(default)* — Both marengo and pegasus
+**Model:** every index uses Marengo 3.0 — search and embeddings (visual, text-in-video, conversational, image, entity). Analysis doesn't need an index.
 
 **Examples:**
 ```
 /twelvelabs:indexes
 /twelvelabs:indexes create "marketing-videos"
-/twelvelabs:indexes create "search-index" marengo
 /twelvelabs:indexes delete abc123
 ```
 
@@ -168,31 +164,32 @@ Search indexed videos using text, images, entities, or combinations.
 
 ### `/twelvelabs:sync-analyze`
 
-Synchronously analyze an already-indexed video (Pegasus 1.2, ≤ 1 hour). Returns result inline.
+Synchronously analyze a video and return the result inline (Pegasus 1.6 by default, Pegasus 1.5 on request; ≤ 1 hour). Accepts an indexed video ID, a direct URL, an asset ID, or a local file (auto-uploaded as an asset).
 
 **Usage:**
 ```
-/twelvelabs:sync-analyze [video-id] [index-id] [prompt]
+/twelvelabs:sync-analyze <video-id-or-url-or-path-or-asset-id> [prompt]
 ```
 
 **Examples:**
 ```
 /twelvelabs:sync-analyze                                    # Analyze with video selection
-/twelvelabs:sync-analyze abc123                             # Analyze specific video
-/twelvelabs:sync-analyze abc123 idx789                      # Video from specific index
+/twelvelabs:sync-analyze abc123                             # Analyze an indexed video
 /twelvelabs:sync-analyze abc123 "List all products mentioned"
-/twelvelabs:sync-analyze abc123 "What are the main topics?"
+/twelvelabs:sync-analyze https://example.com/clip.mp4 "What are the main topics?"
+/twelvelabs:sync-analyze ./video.mp4 "Summarize"
 ```
 
 ### `/twelvelabs:async-analyze`
 
-Asynchronously analyze a video from a direct URL or uploaded asset — no prior indexing required. Uses Pegasus 1.5 and handles videos up to 2 hours. Fire-and-forget: returns a task ID immediately.
+Asynchronously analyze a video from a direct URL, local file, or uploaded asset — no prior indexing required. Uses Pegasus 1.6 by default (Pegasus 1.5 on request) and handles videos up to 2 hours. Fire-and-forget: returns a task ID immediately. Tasks end as `ready`, `failed`, or `canceled`.
 
 **Usage:**
 ```
-/twelvelabs:async-analyze <url> [prompt]
+/twelvelabs:async-analyze <url-or-path-or-asset-id> [prompt]
 /twelvelabs:async-analyze status [task-id]
 /twelvelabs:async-analyze list
+/twelvelabs:async-analyze cancel <task-id>      # Stop a running task (cancel-analyse-task)
 /twelvelabs:async-analyze delete <task-id>
 ```
 
@@ -203,6 +200,7 @@ Asynchronously analyze a video from a direct URL or uploaded asset — no prior 
 /twelvelabs:async-analyze status
 /twelvelabs:async-analyze status abc123
 /twelvelabs:async-analyze list
+/twelvelabs:async-analyze cancel abc123
 ```
 
 **Note:** URL must be a direct http(s) link — YouTube/Drive/Dropbox share links are not accepted.
@@ -274,6 +272,7 @@ ffmpeg -i input.video -c copy output.mp4
 
 - Verify the video ID is correct (use `/twelvelabs:videos` to find video IDs)
 - Ensure the video is fully indexed
+- For an indexed video ID from an older index, retry with the index ID it came from so its asset can be looked up
 
 ---
 
