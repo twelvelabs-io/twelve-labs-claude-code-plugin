@@ -94,15 +94,15 @@ Your Indexes
 
 | Index ID | Name | Models |
 |----------|------|--------|
-| idx_abc  | default | embedding, generative |
-| idx_def  | archive | embedding |
+| idx_abc  | default | marengo3.0 |
+| idx_def  | archive | marengo3.0 |
 
 Total: 2 indexes
 
-Model types:
-- embedding: Enables search functionality
-- generative: Enables analysis (summaries, chapters, etc.)
+Indexes use Marengo 3.0 for search and embeddings. Analysis doesn't need an index.
 ```
+
+Show each model's raw `modelName` from the response. Older indexes may also list a `generative` (Pegasus) model; the plugin doesn't use it — analysis runs Pegasus directly on the video.
 
 **For indexes (no results)**:
 ```
@@ -141,7 +141,5 @@ After listing, suggest relevant actions:
 
 - **Default Index**: Videos are listed from the default index unless specified otherwise
 - **Video IDs**: These IDs are used for targeted search and analysis operations
-- **Model Types**:
-  - `embedding` = search capability
-  - `generative` = analysis capability (summaries, chapters, etc.)
+- **Models**: `list-indexes` labels each model (`embedding` = Marengo search/embeddings) and includes the raw `modelName`. New indexes are Marengo 3.0 only. Analysis (sync/async) doesn't depend on the index's models.
 - **Pagination**: Large lists may be paginated - offer to show more if needed

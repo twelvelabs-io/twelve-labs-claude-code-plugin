@@ -26,7 +26,7 @@ Add this to your `~/.zshrc` or `~/.bashrc` to persist it.
 
 You may need to restart Claude Code after installing for the plugin and MCP to take effect.
 
-The plugin configures the MCP server, slash commands, skills, and hooks automatically.
+The plugin configures the MCP server, slash commands, and skills automatically.
 
 ## What You Can Do
 
@@ -34,14 +34,16 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 
 **Search across your videos** using natural language descriptions of what you're looking for — visual elements, actions, sounds, or on-screen text. You can also search using a reference image to find visually similar content, combine an image with text for refined results, or search for specific people and objects using entity recognition.
 
-**Analyze video content** to generate summaries, extract key topics, answer questions, list action items, or perform any open-ended analysis guided by a custom prompt. Both analyze commands accept indexed `videoId`s, direct URLs, asset IDs, or local files (auto-uploaded as assets). Two modes:
+**Analyze video content** to generate summaries, extract key topics, answer questions, list action items, or perform any open-ended analysis guided by a custom prompt. Both analyze commands accept direct URLs, asset IDs, or local files (auto-uploaded as assets); `/twelvelabs:sync-analyze` also accepts indexed `videoId`s. Two modes:
 
-- `/twelvelabs:sync-analyze` — returns the result inline. Pegasus 1.5 by default for URL/asset/file inputs; falls back to Pegasus 1.2 only when analysing an existing indexed `videoId` or when the user explicitly requests 1.2. Cap: ≤1 hour video.
-- `/twelvelabs:async-analyze` — fire-and-forget for longer videos (up to 2 hours), Pegasus 1.5 throughout. Also supports **time-based metadata extraction** (`analysisMode: "time_based_metadata"` + `segmentDefinitions`) for per-segment structured output, multimodal prompting with reference images (`promptV2`), and structured JSON output (`jsonSchema`).
+Both use **Pegasus 1.6** by default for every input type; ask for Pegasus 1.5 to use it instead.
+
+- `/twelvelabs:sync-analyze` — returns the result inline. For an indexed `videoId`, the plugin also passes the index it came from so the server can find the video's asset. Cap: ≤1 hour video.
+- `/twelvelabs:async-analyze` — fire-and-forget for longer videos (up to 2 hours). Running tasks can be canceled. Also supports **time-based metadata extraction** (`analysisMode: "time_based_metadata"` + `segmentDefinitions`) for per-segment structured output, multimodal prompting with reference images (`promptV2`), and structured JSON output (`jsonSchema`).
 
 **Create video embeddings** for use in downstream applications like similarity search, clustering, or recommendation systems.
 
-**Manage indexes** to organize your videos into separate collections. Each index can be configured with different model capabilities — Marengo for search or Pegasus for text generation.
+**Manage indexes** to organize your videos into separate collections. Indexes use Marengo 3.0 for search and embeddings. Analysis doesn't need an index.
 
 **Set up entity search** by creating collections of people or objects with reference images. Once configured, you can find exactly when and where a specific person appears across all your indexed videos.
 
@@ -54,16 +56,17 @@ The plugin configures the MCP server, slash commands, skills, and hooks automati
 | `/twelvelabs:index-video <path-or-url> [index-id]` | Index a local video, URL, or Google Drive link |
 | `/twelvelabs:index-video status [task-id]` | Check indexing task status |
 | `/twelvelabs:indexes` | List all indexes |
-| `/twelvelabs:indexes create <name> [model]` | Create a new index (models: `marengo`, `pegasus`, or both) |
+| `/twelvelabs:indexes create <name>` | Create a new index (Marengo 3.0 search/embedding) |
 | `/twelvelabs:indexes delete <index-id>` | Delete an index |
 | `/twelvelabs:videos [index-id]` | List indexed videos |
 | `/twelvelabs:search <query> [index-id]` | Text search across videos |
 | `/twelvelabs:search <image> [text] [index-id]` | Image or composed (image + text) search |
 | `/twelvelabs:search <@entity_id> [action] [index-id]` | Entity search for specific people/objects |
-| `/twelvelabs:sync-analyze <video-id-or-url-or-asset-or-path> [prompt]` | Synchronous analysis. Pegasus 1.5 by default; Pegasus 1.2 forced for `videoId` |
-| `/twelvelabs:async-analyze <url-or-path-or-asset> [prompt]` | Async analysis (Pegasus 1.5, ≤2 hours; supports time-based metadata, `promptV2`, `jsonSchema`) |
+| `/twelvelabs:sync-analyze <video-id-or-url-or-asset-or-path> [prompt]` | Synchronous analysis (Pegasus 1.6 default, ≤1 hour) |
+| `/twelvelabs:async-analyze <url-or-path-or-asset> [prompt]` | Async analysis (Pegasus 1.6 default, ≤2 hours; supports time-based metadata, `promptV2`, `jsonSchema`) |
 | `/twelvelabs:async-analyze status [task-id]` | Check async-analyze task status |
 | `/twelvelabs:async-analyze list` | List async-analyze tasks |
+| `/twelvelabs:async-analyze cancel <task-id>` | Cancel a running async-analyze task |
 | `/twelvelabs:async-analyze delete <task-id>` | Delete an async-analyze task |
 | `/twelvelabs:embed <path-or-url>` | Create video embeddings |
 | `/twelvelabs:embed status [task-id]` | Check embedding task status |
@@ -130,8 +133,8 @@ You can also skip slash commands and just describe what you want:
 
 - "What is this video about?"
 - "Summarize the key points of this video"
-- "Analyze https://example.com/clip.mp4 and tell me what happens" (URL input — Pegasus 1.5)
-- "Analyze /path/to/clip.mp4 in one sentence" (local file — auto-uploaded, Pegasus 1.5)
+- "Analyze https://example.com/clip.mp4 and tell me what happens" (URL input — Pegasus 1.6)
+- "Analyze /path/to/clip.mp4 in one sentence" (local file — auto-uploaded, Pegasus 1.6)
 - "Extract action items from this meeting"
 - "Return JSON with `{product, timestamp_sec}[]` for every product mentioned" (structured output via `jsonSchema`)
 
@@ -143,6 +146,7 @@ You can also skip slash commands and just describe what you want:
 - "Find every shot that looks like this product image" (multimodal `promptV2` with reference images)
 - "Is my async analyze task done?"
 - "Show all my failed async tasks"
+- "Cancel that analysis, I picked the wrong video"
 - "Delete the analyze task for that long video"
 
 #### Embeddings
@@ -163,7 +167,6 @@ You can also skip slash commands and just describe what you want:
 - "Show my indexes"
 - "What indexes do I have?"
 - "Create a new index called marketing-videos"
-- "Create a search-only index with marengo"
 
 #### Entity Management
 

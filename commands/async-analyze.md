@@ -2,12 +2,12 @@
 name: async-analyze
 description: Asynchronously analyze a video from a URL, local file, asset ID, or base64 — no prior indexing required
 disable-model-invocation: true
-argument-hint: "<url-or-path-or-asset-id> [prompt] | status [task-id] | list | delete <task-id>"
+argument-hint: "<url-or-path-or-asset-id> [prompt] | status [task-id] | list | cancel <task-id> | delete <task-id>"
 ---
 
 # /twelvelabs:async-analyze - Async Video Analysis
 
-Asynchronously analyse a video using Pegasus 1.5 (default). Accepts a direct URL, a local file path (auto-uploaded as an asset), a previously uploaded asset ID, or base64 data — no prior indexing required. Handles videos up to 2 hours. Returns a task ID immediately; poll with `status` to retrieve the result.
+Asynchronously analyse a video using Pegasus 1.6 (default; Pegasus 1.5 on request). Accepts a direct URL, a local file path (auto-uploaded as an asset), a previously uploaded asset ID, or base64 data — no prior indexing required. Handles videos up to 2 hours. Returns a task ID immediately; poll with `status` to retrieve the result.
 
 Use this when:
 - You have a video URL, local file, or asset but no indexed `videoId`
@@ -24,6 +24,7 @@ For already-indexed videos under 1 hour, `/twelvelabs:sync-analyze` is faster.
 /twelvelabs:async-analyze <url-or-path-or-asset-id> "<prompt>"
 /twelvelabs:async-analyze status [task-id]
 /twelvelabs:async-analyze list
+/twelvelabs:async-analyze cancel <task-id>
 /twelvelabs:async-analyze delete <task-id>
 ```
 
@@ -38,19 +39,20 @@ For already-indexed videos under 1 hour, `/twelvelabs:sync-analyze` is faster.
 - `prompt` - Optional: natural-language question or instruction (max 2000 tokens). Drives general analysis. Cannot be combined with `analysisMode: "time_based_metadata"`.
 - `status` - Check task status. Optionally provide a task ID.
 - `list` - List recent async analyse tasks (supports filters — see List Flow).
+- `cancel` - Stop a task that is still queued, pending, or processing.
 - `delete` - Delete a task by ID.
 
 ### Optional advanced parameters (when the user asks for them)
 
 | Param | Purpose |
 |---|---|
-| `modelName` | `"pegasus1.5"` (default) or `"pegasus1.2"` (legacy, deprecated). Set 1.2 only if the user explicitly requests it. |
-| `promptV2` | Structured prompt with `<@name>` references to attached images (Pegasus 1.5 only). Mutually exclusive with `prompt`. Shape: `{ inputText, mediaSources: [{ name, mediaType: "image", url\|assetId\|base64String }] }`. Up to 4 mediaSources. |
+| `modelName` | `"pegasus1.6"` (default) or `"pegasus1.5"`. Set 1.5 only if the user explicitly requests it. Both support every parameter below. |
+| `promptV2` | Structured prompt with `<@name>` references to attached images. Mutually exclusive with `prompt`. Shape: `{ inputText, mediaSources: [{ name, mediaType: "image", url\|assetId\|base64String }] }`. Up to 4 mediaSources. |
 | `temperature` | 0-1, default 0.2 |
-| `maxTokens` | Pegasus 1.2: 1-4096. Pegasus 1.5: 2048-32768 (default 32768). |
+| `maxTokens` | 2048-32768 (default 32768). |
 | `jsonSchema` | JSON Schema (Draft 2020-12) — constrain general-mode output to structured JSON. Cannot combine with `segmentDefinitions`. |
-| `startTime` / `endTime` | Clip the analysis window (Pegasus 1.5 only). `end - start ≥ 4`. Mutually exclusive with `segmentDefinition.timeRanges`. |
-| `analysisMode` | `"time_based_metadata"` — switches output to per-segment structured extraction. Requires `segmentDefinitions`. Pegasus 1.5 only. |
+| `startTime` / `endTime` | Clip the analysis window. `end - start ≥ 4`. Mutually exclusive with `segmentDefinition.timeRanges`. |
+| `analysisMode` | `"time_based_metadata"` — switches output to per-segment structured extraction. Requires `segmentDefinitions`. |
 | `segmentDefinitions` | 1-10 segment definitions; each has `id`, `description`, optional `fields` (typed schema), optional `mediaSources` (up to 4 reference images), optional `timeRanges`. |
 | `minSegmentDuration` / `maxSegmentDuration` | Constraints on auto-extracted segment lengths. `time_based_metadata` only. Mutually exclusive with per-definition `timeRanges`. |
 | `customId` | Caller-supplied tracking ID (1-64 chars, alphanumeric + `-_`). Round-trips through `get-analyse-task` and `list-analyse-tasks`. |
@@ -76,6 +78,11 @@ For already-indexed videos under 1 hour, `/twelvelabs:sync-analyze` is faster.
 /twelvelabs:async-analyze list
 ```
 
+### Cancel a Task
+```
+/twelvelabs:async-analyze cancel abc123-task-id
+```
+
 ### Delete a Task
 ```
 /twelvelabs:async-analyze delete abc123-task-id
@@ -90,12 +97,14 @@ If `$ARGUMENTS` is empty:
 Please provide a video URL, or use:
   status [task-id]   — check task status
   list               — list recent tasks
+  cancel <task-id>   — stop a running task
   delete <task-id>   — delete a task
 ```
 
 Check the first token of `$ARGUMENTS`:
 - `status` → **Status Flow**
 - `list` → **List Flow**
+- `cancel` → **Cancel Flow**
 - `delete` → **Delete Flow**
 - Anything else → **Analyse Flow**
 
@@ -144,14 +153,14 @@ Uploaded <path> as asset <assetId>. Starting analysis…
 
 ### Step 3b: Start Async Analysis Task
 
-Use the input parameter that matches the input type. Default `modelName` to `pegasus1.5` unless the user explicitly asked for `pegasus1.2`.
+Use the input parameter that matches the input type. Default `modelName` to `pegasus1.6` unless the user explicitly asked for `pegasus1.5`.
 
 For a URL:
 ```
 Tool: mcp__twelvelabs-mcp__async-analyse-video
 Parameters:
   videoUrl: "<url>"
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -160,7 +169,7 @@ For an asset ID (either user-provided or just uploaded in Step 3a):
 Tool: mcp__twelvelabs-mcp__async-analyse-video
 Parameters:
   assetId: "<asset-id>"
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -172,7 +181,7 @@ When the user asks for structured per-segment extraction (e.g. "find all the hig
 Tool: mcp__twelvelabs-mcp__async-analyse-video
 Parameters:
   videoUrl: "<url>"                    # or assetId / base64Video
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   analysisMode: "time_based_metadata"
   segmentDefinitions:
     - id: "highlight"
@@ -203,7 +212,7 @@ promptV2:
     - { name: "reference-light", mediaType: "image", assetId: "asset_..." }
 ```
 
-`promptV2` requires `pegasus1.5` and is mutually exclusive with `prompt`.
+`promptV2` is mutually exclusive with `prompt`.
 
 ### Step 4: Report Result
 
@@ -212,9 +221,10 @@ On success:
 Async analysis started!
 
 Task ID: <task_id>
-Model: pegasus1.5
+Model: pegasus1.6
 
 Analysis runs in the background. Use `/twelvelabs:async-analyze status <task_id>` to poll for results.
+To stop it: `/twelvelabs:async-analyze cancel <task_id>`.
 Processing typically takes 30 seconds to a few minutes depending on video length.
 ```
 
@@ -258,6 +268,18 @@ Task ID: <task_id>
 Error: <error details>
 ```
 
+**If status is `canceled`** (final — stop polling; there is no result):
+```
+Analysis Canceled
+
+Task ID: <task_id>
+
+This task was canceled and produced no result. Start a new one with:
+  /twelvelabs:async-analyze <url-or-path-or-asset-id> "<prompt>"
+```
+
+`ready`, `failed`, and `canceled` are all final states. Only keep polling for the states below.
+
 **If status is `processing`, `pending`, or `queued`**:
 ```
 Analysis In Progress
@@ -267,6 +289,7 @@ Status: <status>
 
 Still processing. Check again in 10–30 seconds with:
   /twelvelabs:async-analyze status <task_id>
+To stop it: /twelvelabs:async-analyze cancel <task_id>
 ```
 
 ---
@@ -284,7 +307,7 @@ Optional parameters (combine as needed based on user intent):
 
 - `page` (integer, default 1)
 - `pageLimit` (integer, max 50, default 10)
-- `status` — one of `queued`, `pending`, `processing`, `ready`, `failed`
+- `status` — one of `queued`, `pending`, `processing`, `ready`, `failed`, `canceled`
 - `videoUrl` — filter by exact video source URL
 - `assetId` — filter by video source asset ID
 - `analysisMode` — `"general"` or `"time_based_metadata"`
@@ -320,6 +343,26 @@ Start one with: /twelvelabs:async-analyze <video-url>
 
 ---
 
+## Cancel Flow
+
+Extract the task ID from `$ARGUMENTS` (everything after `cancel`).
+
+If no task ID:
+```
+Usage: /twelvelabs:async-analyze cancel <task-id>
+```
+
+```
+Tool: mcp__twelvelabs-mcp__cancel-analyse-task
+Parameters:
+  taskId: "<task-id>"
+```
+
+On success: "Analyse task `<task-id>` canceled. It will produce no result." Stop polling it.
+On error (e.g. the task already finished): report the API error — a `ready` or `failed` task can't be canceled.
+
+---
+
 ## Delete Flow
 
 Extract the task ID from `$ARGUMENTS` (everything after `delete`).
@@ -338,7 +381,7 @@ Parameters:
 ```
 
 On success: "Analyse task `<task-id>` deleted."
-On conflict (task still processing): Report that in-progress tasks cannot be deleted — wait for completion.
+On conflict (task still processing): Report that in-progress tasks cannot be deleted — cancel it first with `/twelvelabs:async-analyze cancel <task-id>`, or wait for completion.
 
 ---
 
@@ -347,8 +390,9 @@ On conflict (task still processing): Report that in-progress tasks cannot be del
 - **No indexing required**: `async-analyse-video` accepts a URL or asset directly
 - **Local files are auto-uploaded**: when given a local path, this command runs `create-asset` for you and uses the resulting asset ID. The asset persists in your account until you delete it with `/twelvelabs:assets delete <id>`.
 - **Video URL must be a direct link**: Share links from YouTube/Drive/Dropbox are rejected; use direct http(s) URLs
-- **Fire-and-forget**: The tool returns immediately with a task ID — poll with `status`
-- **Model**: Uses Pegasus 1.5 by default (supports videos up to 2 hours)
+- **Fire-and-forget**: The tool returns immediately with a task ID — poll with `status`. `ready`, `failed`, and `canceled` are final; stop polling on any of them.
+- **Stopping a task**: `cancel <task-id>` stops a queued/pending/processing task
+- **Model**: Uses Pegasus 1.6 by default; Pegasus 1.5 on request (supports videos up to 2 hours)
 - **Sync vs Async**: For indexed videos under 1 hour, `/twelvelabs:sync-analyze` is faster
 
 ## Related Commands

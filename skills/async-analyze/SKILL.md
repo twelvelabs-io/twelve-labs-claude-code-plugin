@@ -1,11 +1,11 @@
 ---
 name: async-analyze
-description: Asynchronously analyze a video — by URL, local file path (auto-uploaded), asset ID, or base64 — no prior indexing required. Use for URL inputs, videos over 1 hour, time-based metadata extraction, multimodal prompting with reference images, structured JSON output, or when the user asks to check/list/delete async analysis tasks.
+description: Asynchronously analyze a video — by URL, local file path (auto-uploaded), asset ID, or base64 — no prior indexing required. Use for URL inputs, videos over 1 hour, time-based metadata extraction, multimodal prompting with reference images, structured JSON output, or when the user asks to check/list/cancel/delete async analysis tasks.
 ---
 
 # Async Video Analysis
 
-Asynchronously analyse a video using Pegasus 1.5 (default). Accepts a direct http(s) URL, a local file path (auto-uploaded as an asset), a previously uploaded asset ID, or base64 data — no prior indexing required. Handles videos up to 2 hours. Returns a task ID immediately; poll with `get-analyse-task` for the result.
+Asynchronously analyse a video using Pegasus 1.6 (default; Pegasus 1.5 on request). Accepts a direct http(s) URL, a local file path (auto-uploaded as an asset), a previously uploaded asset ID, or base64 data — no prior indexing required. Handles videos up to 2 hours. Returns a task ID immediately; poll with `get-analyse-task` for the result.
 
 ## When to Use This Skill
 
@@ -17,13 +17,13 @@ Use this skill when the user:
 - Wants **multimodal prompting** with reference images (`promptV2` + `mediaSources`)
 - Wants **structured JSON output** (`jsonSchema`)
 - Asks about a pending async analysis task ("is my analysis done?")
-- Asks to check, list, filter, or delete async analysis tasks
+- Asks to check, list, filter, cancel, or delete async analysis tasks
 
 For short, prompt-only analysis of an already-indexed video, use `sync-analyze` instead — it returns inline.
 
 ## Model Default
 
-`pegasus1.5` for everything. Only set `pegasus1.2` when the user explicitly asks for legacy mode.
+`pegasus1.6` for everything. Only set `pegasus1.5` when the user explicitly asks for it. Both models support every mode and parameter below.
 
 ## Instructions
 
@@ -50,13 +50,13 @@ Use the user's question/instruction as `prompt`. Default:
 
 #### Step 3: Start the Task
 
-Exactly one source (`videoUrl` / `assetId` / `base64Video`), `modelName: "pegasus1.5"`, plus `prompt`:
+Exactly one source (`videoUrl` / `assetId` / `base64Video`), `modelName: "pegasus1.6"`, plus `prompt`:
 
 ```
 Tool: mcp__twelvelabs-mcp__async-analyse-video
 Parameters:
   <videoUrl | assetId | base64Video>: "..."
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "..."
 ```
 
@@ -79,7 +79,7 @@ segmentDefinitions:
 # Optional: minSegmentDuration / maxSegmentDuration (auto-segmenting bounds)
 ```
 
-Don't set `prompt` or `promptV2` in this mode — the per-segment `description` + `fields` drive the output. Pegasus 1.5 only.
+Don't set `prompt` or `promptV2` in this mode — the per-segment `description` + `fields` drive the output.
 
 **Structured JSON output** (general mode) — the user wants JSON, not per-segment:
 
@@ -99,9 +99,9 @@ promptV2:
     - { name: "light-ref", mediaType: "image", assetId: "asset_..." }
 ```
 
-Mutually exclusive with `prompt`. Requires Pegasus 1.5.
+Mutually exclusive with `prompt`.
 
-**Clip windowing** — restrict analysis to a sub-range (Pegasus 1.5 only):
+**Clip windowing** — restrict analysis to a sub-range:
 
 ```
 startTime: 60
@@ -113,7 +113,7 @@ endTime: 180
 **Other knobs**:
 
 - `temperature` (0-1, default 0.2)
-- `maxTokens` (Pegasus 1.5: 2048-32768, default 32768)
+- `maxTokens` (2048-32768, default 32768)
 - `customId` (1-64 chars, alphanumeric+`-_`; round-trips through `get-analyse-task` / `list-analyse-tasks` — useful for caller-side correlation)
 
 #### Step 5: Report to User
@@ -122,11 +122,12 @@ endTime: 180
 Async analysis started!
 
 Task ID: <task_id>
-Model: pegasus1.5
+Model: pegasus1.6
 <customId surfaced if set>
 
 Polling with: /twelvelabs:async-analyze status <task_id>
 (typical wall time: 30s-several minutes; 2-hour videos can take ~10 min)
+To stop it: /twelvelabs:async-analyze cancel <task_id>
 ```
 
 ---
@@ -141,7 +142,14 @@ Parameters:
   taskId: "<task-id>"
 ```
 
-The MCP returns plain text "Task <id> is READY." with the result below when done, "Task <id> is FAILED." with error info on failure, or "Task <id> is PROCESSING/QUEUED/PENDING." with a "poll again in 5-10s" hint while running. Watch for the substring "is READY"/"is FAILED" to decide; don't try to JSON-parse the response.
+The MCP returns plain text:
+
+- "Task <id> is READY." with the result below when done.
+- "Task <id> FAILED." with error info on failure.
+- "Task <id> was CANCELED." when the task was canceled — it says to stop polling.
+- "Task <id> is PROCESSING/QUEUED/PENDING." with a "poll again in 5-10s" hint while running.
+
+`ready`, `failed`, and `canceled` are all final: stop polling on any of them. Watch for the substrings "READY" / "FAILED" / "CANCELED" to decide; don't try to JSON-parse the response. A canceled task has no result — offer to start a new one.
 
 If the task is `ready` and the `result.data` is JSON (from `jsonSchema`) or a per-segment object map (from `time_based_metadata`), the response carries it as a string — parse if needed for display.
 
@@ -155,7 +163,7 @@ The MCP `list-analyse-tasks` tool supports:
 
 - `page` (default 1)
 - `pageLimit` (max 50, default 10)
-- `status` — `queued` | `pending` | `processing` | `ready` | `failed`
+- `status` — `queued` | `pending` | `processing` | `ready` | `failed` | `canceled`
 - `videoUrl` — exact match on the source URL
 - `assetId` — exact match on the source asset ID
 - `analysisMode` — `general` | `time_based_metadata`
@@ -170,6 +178,20 @@ Default (no filter): newest first, 10 per page.
 
 ---
 
+### Canceling a Task
+
+User wants to stop a task that is still queued, pending, or processing ("cancel that analysis", "stop task X"):
+
+```
+Tool: mcp__twelvelabs-mcp__cancel-analyse-task
+Parameters:
+  taskId: "<task-id>"
+```
+
+The task ends with status `canceled` and produces no result. Stop polling it.
+
+---
+
 ### Deleting a Task
 
 ```
@@ -178,7 +200,7 @@ Parameters:
   taskId: "<task-id>"
 ```
 
-The MCP returns a 409 if the task is still processing — surface that as "still processing, wait for it to finish before deleting".
+The MCP returns a 409 if the task is still processing — surface that as "still processing: cancel it first with `cancel-analyse-task`, or wait for it to finish before deleting".
 
 ## Example Interactions
 
@@ -186,7 +208,7 @@ The MCP returns a 409 if the task is still processing — surface that as "still
 → `async-analyse-video` with `videoUrl` + default prompt → poll status → report result.
 
 **"Analyze /Users/me/clip.mp4"**
-→ `create-asset` with `file: ...` → `async-analyse-video` with the new `assetId` + Pegasus 1.5 → poll → report. Surface the asset ID for reuse.
+→ `create-asset` with `file: ...` → `async-analyse-video` with the new `assetId` + Pegasus 1.6 → poll → report. Surface the asset ID for reuse.
 
 **"For this 90-minute keynote, extract every product mention with timestamp"**
 → `async-analyse-video` with `analysisMode: "time_based_metadata"`, `segmentDefinitions: [{ id: "product-mention", description: "...", fields: [{name: "product_name", type: "string"}, {name: "context", type: "string"}] }]`.
@@ -197,10 +219,14 @@ The MCP returns a 409 if the task is still processing — surface that as "still
 **"List my failed async analyses"**
 → `list-analyse-tasks` with `status: "failed"`.
 
+**"Cancel that analysis, I used the wrong video"**
+→ `cancel-analyse-task` with the task ID → confirm it's `canceled`.
+
 ## Important Notes
 
-- **Pegasus 1.5 default** for everything — only switch to 1.2 on explicit request.
+- **Pegasus 1.6 default** for everything — only switch to 1.5 on explicit request.
 - **Direct URLs only**: YouTube/Drive/Dropbox share links are rejected by the MCP.
 - **Local files auto-upload** — assets persist; surface the ID.
 - **Up to 2 hours** of video per task.
-- **Async — fire-and-forget**: poll status every 5-10s with `get-analyse-task`.
+- **Async — fire-and-forget**: poll status every 5-10s with `get-analyse-task`. Stop on `ready`, `failed`, or `canceled`.
+- **Stopping a task**: `cancel-analyse-task` stops a queued/pending/processing task.

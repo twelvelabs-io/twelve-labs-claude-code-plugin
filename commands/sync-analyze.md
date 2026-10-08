@@ -23,7 +23,7 @@ For very long videos (>1 hour) or for time-based metadata segmentation, use `/tw
 ## Arguments
 
 - First positional — one of:
-  - `videoId` of a previously-indexed video (Pegasus 1.2 only — see model policy below)
+  - `videoId` of a previously-indexed video (the command also passes the `indexId` it came from, when known)
   - Direct http(s) URL to a raw media file
   - Asset ID (24-char hex, or `asset_*`) from a previous `/twelvelabs:assets upload`
   - Absolute or relative local file path (auto-uploaded as an asset internally)
@@ -31,26 +31,25 @@ For very long videos (>1 hour) or for time-based metadata segmentation, use `/tw
 
 ## Model Policy
 
-The MCP server supports two generative models:
+The MCP server supports two analysis models:
 
-- **Pegasus 1.5** (default for direct inputs) — clip windowing, structured prompts with reference images, larger token budget.
-- **Pegasus 1.2** (legacy) — required when input is a `videoId` from an existing index. Mostly there for backwards compatibility.
+- **Pegasus 1.6** (default) — used for every input type.
+- **Pegasus 1.5** — selectable on request.
 
-This command picks the model automatically:
+Both support clip windowing, structured prompts with reference images, and JSON output, for every input type including `videoId`.
 
 | Input type | Default `modelName` |
 |---|---|
-| `videoId` (from existing index) | `pegasus1.2` (forced — the MCP rejects 1.5 + videoId) |
-| URL / asset ID / local file / base64 | **`pegasus1.5`** |
+| Any (`videoId` / URL / asset ID / local file / base64) | **`pegasus1.6`** |
 
-Override only when the user explicitly asks (e.g. "use pegasus 1.2", "legacy model"). Otherwise the defaults above apply.
+Use `pegasus1.5` only when the user explicitly asks for it (e.g. "use pegasus 1.5").
 
 ## Examples
 
 ```
-/twelvelabs:sync-analyze 6a04abc...                  # videoId, Pegasus 1.2
+/twelvelabs:sync-analyze 6a04abc...                  # videoId, Pegasus 1.6
 /twelvelabs:sync-analyze https://example.com/clip.mp4 "summarise"
-/twelvelabs:sync-analyze ./video.mp4 "what animal is shown"  # auto-uploads file as asset, Pegasus 1.5
+/twelvelabs:sync-analyze ./video.mp4 "what animal is shown"  # auto-uploads file as asset, Pegasus 1.6
 /twelvelabs:sync-analyze asset_6a04xyz... "extract action items"
 ```
 
@@ -62,7 +61,7 @@ When the user invokes `/twelvelabs:sync-analyze`, parse `$ARGUMENTS`.
 
 Extract the first token from `$ARGUMENTS`:
 
-- **No argument** → ask the user which video to analyse (call `mcp__twelvelabs-mcp__list-videos`, present a table, capture their pick as `videoId`).
+- **No argument** → ask the user which video to analyse (call `mcp__twelvelabs-mcp__list-videos`, present a table, capture their pick as `videoId` and remember the `indexId` you listed from — the default index if you didn't pass one).
 - Starts with `http://` or `https://` → treat as `videoUrl`.
 - Matches `^[a-f0-9]{24}$` or starts with `asset_` → if the user says "asset" / "uploaded asset" / etc., treat as `assetId`. If the user says "video" / refers to an indexed video, treat as `videoId`. When ambiguous, prefer `videoId` (the more common case for a 24-char hex).
 - Otherwise → treat as a local file path. Resolve to absolute; verify the file exists. If it doesn't:
@@ -97,19 +96,19 @@ Uploaded <path> as asset <assetId>. Running sync analysis…
 
 ### Step 3b: Pick the Model
 
-- If input is `videoId` → force `modelName: "pegasus1.2"` (the MCP rejects 1.5 + videoId).
-- Otherwise → **`modelName: "pegasus1.5"`** unless the user explicitly asked for 1.2.
+- **`modelName: "pegasus1.6"`** for every input type, unless the user explicitly asked for `pegasus1.5`.
 
 ### Step 3c: Call the MCP Tool
 
 Use the parameter that matches the classified input type. Provide **exactly one** of `videoId`, `videoUrl`, `assetId`, `base64Video`.
 
-For `videoId`:
+For `videoId` — include `indexId` whenever you know the index the video came from (e.g. from search results, the index you listed, or the default index). The server uses it to look up the video's asset ID directly; without it, the server searches all indexes:
 ```
 Tool: mcp__twelvelabs-mcp__sync-analyse-video
 Parameters:
   videoId: "<id>"
-  modelName: "pegasus1.2"
+  indexId: "<index-id>"     # when known
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -118,7 +117,7 @@ For `videoUrl`:
 Tool: mcp__twelvelabs-mcp__sync-analyse-video
 Parameters:
   videoUrl: "<url>"
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -127,7 +126,7 @@ For `assetId` (or the one just uploaded in Step 3a):
 Tool: mcp__twelvelabs-mcp__sync-analyse-video
 Parameters:
   assetId: "<id>"
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -136,7 +135,7 @@ For base64 (rare — the user explicitly provides base64 data):
 Tool: mcp__twelvelabs-mcp__sync-analyse-video
 Parameters:
   base64Video: "<base64>"
-  modelName: "pegasus1.5"
+  modelName: "pegasus1.6"
   prompt: "<prompt>"
 ```
 
@@ -145,12 +144,10 @@ Parameters:
 These are all optional. Add them to the tool call when the user requests the corresponding behavior:
 
 - `temperature` (0-1, default 0.2): for "more creative" / "more deterministic".
-- `maxTokens`:
-  - Pegasus 1.2: 1-4096 (default 4096).
-  - Pegasus 1.5: 512-65536 (default 4096).
+- `maxTokens`: 512-65536 (default 4096).
 - `jsonSchema`: when the user wants structured output ("return JSON", "give me an object with these fields"). Provide a JSON Schema (Draft 2020-12) object. Cannot be combined with `promptV2`.
-- `startTime` / `endTime` (Pegasus 1.5 only): clip the analysis to a sub-range in seconds. `end - start ≥ 4`.
-- `promptV2` (Pegasus 1.5 only, mutually exclusive with `prompt`): structured prompt with `<@name>` references to attached images. Shape: `{ inputText: "...", mediaSources: [{ name, mediaType: "image", url|assetId|base64String }] }`. Use when the user wants to compare a video against reference images.
+- `startTime` / `endTime`: clip the analysis to a sub-range in seconds. `end - start ≥ 4`.
+- `promptV2` (mutually exclusive with `prompt`): structured prompt with `<@name>` references to attached images. Shape: `{ inputText: "...", mediaSources: [{ name, mediaType: "image", url|assetId|base64String }] }`. Use when the user wants to compare a video against reference images.
 
 ### Step 5: Display Analysis Result
 
@@ -160,7 +157,7 @@ Video Analysis
 <analysis output>
 
 Video: <filename | URL | asset ID | videoId>
-Model: <pegasus1.2 | pegasus1.5>
+Model: <pegasus1.6 | pegasus1.5>
 ```
 
 If a custom prompt was used, also include:
@@ -172,7 +169,7 @@ Prompt: "<user's prompt>"
 
 **Cannot find video / file**: see Step 1.
 
-**`videoId is not accepted with modelName='pegasus1.5'`**: this means the input was misclassified as something needing 1.5. Retry with `modelName: "pegasus1.2"` or switch the input to a `videoUrl`/`assetId`/`base64Video`.
+**`videoId` call fails with "asset ... does not exist"**: the video wasn't found in any of the user's indexes. Check the ID with `/twelvelabs:videos`, or retry with the `indexId` it came from.
 
 **`Provide exactly one of videoId, videoUrl, assetId, or base64Video`**: too many or zero sources set in the tool call. Re-classify per Step 1.
 
@@ -182,7 +179,7 @@ Analysis Failed
 
 The analysis could not be completed. Possible causes:
 - The video is still indexing (check with /twelvelabs:index-video status)
-- The index doesn't include the generative model (Pegasus)
+- The `videoId` doesn't exist in any of the user's indexes
 - The asset is still processing — wait for status="ready"
 
 Error: <error message from API>
@@ -190,8 +187,8 @@ Error: <error message from API>
 
 ## Important Notes
 
-- **Default model is Pegasus 1.5** for URL / asset / file / base64 inputs. Only `videoId` flows force Pegasus 1.2.
-- **Indexed-video analysis** still works (pass the `videoId`) but is capped at 1.2's capabilities. New code should prefer URL/asset inputs.
+- **Default model is Pegasus 1.6** for every input type. Pegasus 1.5 is available on request.
+- **Indexed-video analysis** works with the full feature set: the server sends the `videoId` as the video's asset ID. Pass `indexId` with it whenever the index is known.
 - **Indexing not required** for URL/asset/base64 inputs — the analysis happens directly on the source.
 - **Video duration cap**: sync analyse handles up to 1 hour. For longer videos, use `/twelvelabs:async-analyze`.
 - **Auto-uploaded assets** persist in your account. Surface the asset ID so the user can reuse or delete it via `/twelvelabs:assets`.

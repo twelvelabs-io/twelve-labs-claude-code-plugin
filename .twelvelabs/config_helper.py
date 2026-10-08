@@ -43,10 +43,29 @@ Config Schema:
 
 import json
 import os
-import fcntl
 from pathlib import Path
 from datetime import datetime
 from typing import Any, Optional
+
+# fcntl is Unix-only; Windows uses msvcrt for the same advisory lock (issue #6).
+try:
+    import fcntl
+
+    def _lock(f) -> None:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+
+    def _unlock(f) -> None:
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+except ImportError:
+    import msvcrt
+
+    def _lock(f) -> None:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+
+    def _unlock(f) -> None:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 # Config file location
 CONFIG_DIR = Path(__file__).parent
@@ -98,12 +117,13 @@ def write_config(config: dict) -> bool:
         
         # Write with exclusive lock to prevent race conditions
         with open(CONFIG_FILE, "w") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            _lock(f)
             try:
                 json.dump(config, f, indent=2)
                 f.write("\n")
+                f.flush()
             finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                _unlock(f)
         return True
     except (IOError, OSError):
         return False
