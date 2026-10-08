@@ -29,7 +29,7 @@ Include the following information in your report:
 This security policy applies to:
 
 - The TwelveLabs Claude Code Plugin source code in this repository
-- Configuration files and hooks included in the plugin
+- Configuration files included in the plugin
 
 This security policy does **not** apply to:
 
@@ -41,7 +41,6 @@ This security policy does **not** apply to:
 
 When using this plugin:
 1. **Protect your API key**: Never commit your `TWELVELABS_API_KEY` to version control. Use environment variables.
-2. **Review hooks**: If modifying the provided hooks, ensure you don't introduce security vulnerabilities.
-3. **Keep updated**: Use the latest version of the plugin to benefit from security fixes.
+2. **Keep updated**: Use the latest version of the plugin to benefit from security fixes.
 
 Thank you for helping keep TwelveLabs and our users safe!

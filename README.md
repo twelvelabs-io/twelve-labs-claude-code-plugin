@@ -26,7 +26,7 @@ Add this to your `~/.zshrc` or `~/.bashrc` to persist it.
 
 You may need to restart Claude Code after installing for the plugin and MCP to take effect.
 
-The plugin configures the MCP server, slash commands, skills, and hooks automatically.
+The plugin configures the MCP server, slash commands, and skills automatically.
 
 ## What You Can Do
 

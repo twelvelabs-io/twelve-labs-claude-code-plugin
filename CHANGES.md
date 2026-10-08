@@ -37,7 +37,8 @@ Both models support `promptV2`, `startTime`/`endTime`, `jsonSchema`, and `time_b
 ## Other fixes in this release
 
 - **Copilot CLI `argument-hint` fix** ([issue #4](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/issues/4) / [PR #5](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/pull/5)): `argument-hint` frontmatter values are quoted so YAML parses them as strings. GitHub Copilot CLI ≥ 1.0.65 silently dropped commands whose hint was a bare `[...]` (parsed as an array).
-- **Windows hooks fix** ([issue #6](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/issues/6)): all six hooks crashed on Windows because `.twelvelabs/config_helper.py` imported the Unix-only `fcntl` module. Hooks now run on Windows.
+- **Hooks removed** ([issue #6](https://github.com/twelvelabs-io/twelve-labs-claude-code-plugin/issues/6)): the six `hooks/` scripts never ran. Their matchers used `mcp__twelvelabs-mcp__…`, but plugin MCP tools are named `mcp__plugin_twelvelabs_twelvelabs-mcp__…`. They also called `python` (missing on most macOS and Linux installs) and read `tool_result` instead of Claude Code's `tool_response`. The commands already track tasks themselves, so the hooks are removed rather than fixed.
+- **Windows fix** (issue #6): `.twelvelabs/config_helper.py` no longer imports the Unix-only `fcntl` module on Windows (it uses `msvcrt` there), so the commands that use it work on Windows.
 
 ## Version
 
