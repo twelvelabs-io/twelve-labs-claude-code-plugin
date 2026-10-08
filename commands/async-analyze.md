@@ -2,7 +2,7 @@
 name: async-analyze
 description: Asynchronously analyze a video from a URL, local file, asset ID, or base64 — no prior indexing required
 disable-model-invocation: true
-argument-hint: "<url-or-path-or-asset-id> [prompt] | status [task-id] | list | delete <task-id>"
+argument-hint: "<url-or-path-or-asset-id> [prompt] | status [task-id] | list | cancel <task-id> | delete <task-id>"
 ---
 
 # /twelvelabs:async-analyze - Async Video Analysis
